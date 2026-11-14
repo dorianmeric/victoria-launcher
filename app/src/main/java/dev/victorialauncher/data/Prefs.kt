@@ -97,6 +97,17 @@ val HOLD_SCROLL_RANGE = 1..12
 /** Past about this the strip is being pushed off the edge it belongs to. */
 val EDGE_ZONE_INSET_RANGE = 0..32
 
+/**
+ * How much of the screen's width the A-Z strip may reach across.
+ *
+ * Half puts the selected letter in the middle of the screen; less pulls the wave in toward the
+ * edge the app list is on, until at zero the letters never leave it.
+ */
+val AZ_WIDTH_RANGE = 0..100
+
+/** Where the strip's width starts: the selected letter at the middle, as it always was. */
+const val DEFAULT_AZ_WIDTH_PERCENT = 50
+
 /** Enough to be a list of what is new, short of being a second app list. */
 val RECENT_SECTION_RANGE = 3..15
 enum class AppFont { SYSTEM, SANS_SERIF, SERIF, MONOSPACE, CUSTOM }
@@ -258,6 +269,7 @@ class Prefs(private val context: Context) {
         val STATUS_BAR_PEEK_SECONDS = intPreferencesKey("status_bar_peek_seconds")
         val AZ_BAND_TOP_FRACTION = floatPreferencesKey("az_band_top_fraction")
         val AZ_BAND_HEIGHT_FRACTION = floatPreferencesKey("az_band_height_fraction")
+        val AZ_WIDTH_PERCENT = intPreferencesKey("az_width_percent")
     }
 
     /** Every padding a user can set by hand; their presence is what retires the first-run layout. */
@@ -899,6 +911,11 @@ class Prefs(private val context: Context) {
     val statusBarPeekSeconds: Flow<Int> =
         data.map { it[Keys.STATUS_BAR_PEEK_SECONDS] ?: 5 }.distinctUntilChanged()
 
+    /** How much of the screen's width the A-Z strip takes, so how far out the wave reaches. */
+    val azWidthPercent: Flow<Int> =
+        data.map { (it[Keys.AZ_WIDTH_PERCENT] ?: DEFAULT_AZ_WIDTH_PERCENT).coerceIn(AZ_WIDTH_RANGE) }
+            .distinctUntilChanged()
+
     /** Null while the A-Z strip follows the favorites; a set range is a fraction of the viewport. */
     val scrubBand: Flow<Pair<Float, Float>?> = data.map { pref ->
         val top = pref[Keys.AZ_BAND_TOP_FRACTION]
@@ -1515,6 +1532,10 @@ class Prefs(private val context: Context) {
             it[Keys.AZ_BAND_TOP_FRACTION] = topFraction
             it[Keys.AZ_BAND_HEIGHT_FRACTION] = heightFraction
         }
+    }
+
+    suspend fun setAzWidthPercent(v: Int) {
+        context.dataStore.edit { it[Keys.AZ_WIDTH_PERCENT] = v.coerceIn(AZ_WIDTH_RANGE) }
     }
 
     /** Hands the strip back to following the favorites list. */

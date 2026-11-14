@@ -124,6 +124,8 @@
     <string name="settings_haptics">Haptic feedback</string>
     <string name="settings_haptics_detail">Follows your system\'s touch feedback setting</string>
     <string name="settings_edge_side">Which edge opens the app list</string>
+    <string name="settings_az_width">Width of the A-Z list</string>
+    <string name="settings_az_width_detail">How far across the screen the wave of letters reaches. Half puts the selected letter in the middle</string>
     <string name="settings_scrub_style">A-Z strip animation</string>
     <string name="scrub_style_bell">Bell</string>
     <string name="scrub_style_ripple">Ripple</string>

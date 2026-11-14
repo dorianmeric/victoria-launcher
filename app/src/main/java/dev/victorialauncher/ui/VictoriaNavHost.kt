@@ -48,6 +48,7 @@ import dev.victorialauncher.data.AppInfo
 import dev.victorialauncher.data.EntryKind
 import dev.victorialauncher.data.PrivateSpace
 import dev.victorialauncher.data.AzStripVisibility
+import dev.victorialauncher.data.DEFAULT_AZ_WIDTH_PERCENT
 import dev.victorialauncher.data.EdgeSide
 import dev.victorialauncher.data.RippleParams
 import dev.victorialauncher.data.ScrubStyle
@@ -321,6 +322,7 @@ fun VictoriaNavHost(
     val scrubStyle by app.prefs.scrubStyle.collectAsState(initial = ScrubStyle.BELL)
     val scrubBubbleShape by app.prefs.scrubBubbleShape.collectAsState(initial = ScrubBubbleShape.ROUNDED)
     val rippleParams by app.prefs.rippleParams.collectAsState(initial = RippleParams())
+    val azWidthPercent by app.prefs.azWidthPercent.collectAsState(initial = DEFAULT_AZ_WIDTH_PERCENT)
     val azStripVisibility by app.prefs.azStripVisibility.collectAsState(initial = AzStripVisibility.NEVER)
     val showAlphabet by app.prefs.showAlphabet.collectAsState(initial = true)
     val alignRight by app.prefs.alignRight.collectAsState(initial = false)
@@ -538,6 +540,7 @@ fun VictoriaNavHost(
         scrubStyle = scrubStyle,
         scrubBubbleShape = scrubBubbleShape,
         rippleParams = rippleParams,
+        azWidthPercent = azWidthPercent,
         azStripVisibility = azStripVisibility,
         shortcutSwipe = shortcutSwipe,
         showAlphabet = showAlphabet,
@@ -852,6 +855,7 @@ fun VictoriaNavHost(
                 scrubStyle = scrubStyle,
                 scrubBubbleShape = scrubBubbleShape,
                 rippleParams = rippleParams,
+                azWidthPercent = azWidthPercent,
                 edgeZoneWidthDp = edgeZoneWidthDp,
                 azStripVisibility = azStripVisibility,
                 showAlphabet = showAlphabet,
@@ -924,6 +928,7 @@ fun VictoriaNavHost(
                 onSetScrubStyle = { scope.launch { app.prefs.setScrubStyle(it) } },
                 onSetScrubBubbleShape = { scope.launch { app.prefs.setScrubBubbleShape(it) } },
                 onSetRippleParams = { scope.launch { app.prefs.setRippleParams(it) } },
+                onSetAzWidthPercent = { scope.launch { app.prefs.setAzWidthPercent(it) } },
                 onSetEdgeZoneWidth = { scope.launch { app.prefs.setEdgeZoneWidthDp(it) } },
                 onSetAzStripVisibility = { scope.launch { app.prefs.setAzStripVisibility(it) } },
                 onSetShowAlphabet = { scope.launch { app.prefs.setShowAlphabet(it) } },

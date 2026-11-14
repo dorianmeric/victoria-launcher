@@ -32,31 +32,6 @@ import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.math.roundToInt
 
-/** Letters sit this far in from the screen edge so they aren't crowding it. */
-private const val EDGE_INSET_DP = 28f
-
-/**
- * How far the bulge pushes the column away from the edge at its peak.
- *
- * Has to clear the fingertip without reaching the bubble. The thumb is already an edge-zone in
- * from the screen edge, so at 75dp the peak landed about 7dp from it — underneath, hidden by
- * the hand pointing at it — while the bubble beginning at 122dp left only about 19dp of room
- * to move into. The two only go further out together, which is what [SCRUB_BUBBLE_INSET_DP]
- * is for.
- */
-private const val BELL_AMPLITUDE_DP = 112f
-
-/** Half the letter cell, so the peak is measured by its edge rather than its middle. */
-private const val LETTER_HALF_DP = 10f
-
-/**
- * Where the letter bubble starts, kept a fixed gap beyond the peak of the bell.
- *
- * Derived rather than written down twice: the bubble sat at a number of its own, so growing
- * the bulge to clear a fingertip walked the strip straight into it.
- */
-const val SCRUB_BUBBLE_INSET_DP = EDGE_INSET_DP + BELL_AMPLITUDE_DP + LETTER_HALF_DP + 18f
-
 // ---- Ripple simulation -----------------------------------------------------------------------
 private const val SIM_DT = 1f / 240f
 
@@ -106,6 +81,10 @@ private class RippleString(private val n: Int) {
  * the finger lifts. Scaling the glyphs (what this used to do) just stretched them until
  * they looked pixelated.
  *
+ * How far the bow reaches is a setting: a share of the screen's width, so the letter under a
+ * finger travels out to [widthPercent] of the way across the screen. See [scrubReach], which
+ * also places the bubble, so the letter that lights up is the letter the bubble names.
+ *
  * [scrubY] and [pullPx] are read as lambdas inside a graphicsLayer so the whole strip
  * animates in the draw phase; recomposing 26 Text nodes per pointer move made this jitter.
  */
@@ -116,6 +95,12 @@ fun EdgeScrubber(
     pullPx: () -> Float,
     band: ScrubBand,
     side: EdgeSide,
+    /** How much of the screen's width the strip takes, in percent. */
+    widthPercent: Int,
+    /** Width of the screen it is on; 0 until it has been measured. */
+    viewportWidthPx: Float,
+    /** Half the letter bubble's width, or 0 where none is drawn. */
+    bubbleHalfPx: Float,
     modifier: Modifier = Modifier,
     style: ScrubStyle = ScrubStyle.BELL,
     ripple: RippleParams = RippleParams(),
@@ -125,7 +110,7 @@ fun EdgeScrubber(
     val spacingPx = band.heightPx / letters.size
     // Wide enough that a good stretch of the alphabet takes part in the curve.
     val sigmaPx = 2.6f * spacingPx
-    val bellPx = BELL_AMPLITUDE_DP * density
+    val bellPx = scrubReach(widthPercent, viewportWidthPx, bubbleHalfPx, density).amplitudePx
 
     val centerYs = remember(letters.size, band.topPx, band.heightPx) {
         FloatArray(letters.size) {
@@ -190,7 +175,7 @@ fun EdgeScrubber(
                 modifier = Modifier
                     .align(if (side == EdgeSide.LEFT) Alignment.TopStart else Alignment.TopEnd)
                     .offset { IntOffset(0, (centerY - spacingPx / 2f).roundToInt()) }
-                    .width(20.dp)
+                    .width(LETTER_WIDTH_DP.dp)
                     .graphicsLayer {
                         val outward: Float
                         val gain: Float
@@ -198,7 +183,8 @@ fun EdgeScrubber(
                             @Suppress("UNUSED_VARIABLE") val tick = frame // subscribe to sim updates
                             // Ripples overshoot negative; keep letters off the screen edge.
                             outward = sim.u[index].coerceAtLeast(-EDGE_INSET_DP * density)
-                            gain = (abs(outward) / bellPx).coerceIn(0f, 1f)
+                            // A zero-width setting has no bulge to measure a ripple against.
+                            gain = if (bellPx > 0f) (abs(outward) / bellPx).coerceIn(0f, 1f) else 0f
                         } else {
                             val y = scrubY()
                             gain = if (y == null) {

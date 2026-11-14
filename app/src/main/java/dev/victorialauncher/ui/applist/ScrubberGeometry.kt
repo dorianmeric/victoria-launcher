@@ -59,6 +59,82 @@ object ScrubberGeometry {
     }
 }
 
+/** How far in from the screen's edge the letters rest, and how wide one letter's cell is. */
+const val EDGE_INSET_DP = 28f
+const val LETTER_WIDTH_DP = 20f
+
+/** Space between the far edge of the peak letter and the bubble that shows it. */
+const val BUBBLE_GAP_DP = 8f
+
+/** What the peak travels when the screen's width is not known yet. */
+private const val FALLBACK_AMPLITUDE_DP = 112f
+
+/**
+ * How far the strip reaches across the screen, measured from the edge it sits on.
+ *
+ * @property amplitudePx how much further out the letter under a finger travels than one at
+ *   rest, which is also the height of the wave the letters are pushed into
+ * @property bubbleCenterPx where the bubble showing that letter is centered, or 0 when no
+ *   bubble is drawn
+ */
+data class ScrubReach(val amplitudePx: Float, val bubbleCenterPx: Float)
+
+/**
+ * Works out the wave and the bubble from one reading of how wide the list is allowed to be.
+ *
+ * The setting is a share of the screen, so [widthPercent] of 50 puts the selected letter in the
+ * middle of the screen whatever the screen is — a tablet's middle is not a phone's. Half the
+ * width is also where the strip has always reached with nothing chosen, so a default install
+ * looks the way it did.
+ *
+ * The bubble needs room beyond the peak, and takes it from the wave: the letters peak short of
+ * the mark by half a letter, a gap and half the bubble, which is what puts the bubble's own
+ * center exactly on the mark. Below roughly a third of the screen there is not enough room for
+ * both, and then the wave keeps half its reach and the bubble slides out past the mark instead
+ * of the letters stopping dead under it.
+ *
+ * [density] is passed rather than read here so this stays a plain calculation.
+ */
+fun scrubReach(
+    widthPercent: Int,
+    screenWidthPx: Float,
+    /** Half the bubble's width, or 0 when the bubble is hidden. */
+    bubbleHalfPx: Float,
+    density: Float,
+): ScrubReach {
+    val restCenterPx = (EDGE_INSET_DP + LETTER_WIDTH_DP / 2f) * density
+    val letterHalfPx = LETTER_WIDTH_DP / 2f * density
+    val gapPx = BUBBLE_GAP_DP * density
+    // Nothing measured yet: the reach the strip has always had, so the first frame is not a
+    // frame of something else.
+    if (screenWidthPx <= 0f) {
+        val amplitudePx = FALLBACK_AMPLITUDE_DP * density
+        val peakOuterPx = restCenterPx + amplitudePx + letterHalfPx
+        return ScrubReach(
+            amplitudePx = amplitudePx,
+            bubbleCenterPx = if (bubbleHalfPx <= 0f) 0f else peakOuterPx + gapPx + bubbleHalfPx,
+        )
+    }
+    // How much further out than resting the peak of the wave gets to travel.
+    val reachPx = (screenWidthPx * widthPercent.coerceIn(0, 100) / 100f - restCenterPx)
+        .coerceAtLeast(0f)
+    val amplitudePx = if (bubbleHalfPx <= 0f) {
+        reachPx
+    } else {
+        (reachPx - bubbleHalfPx - gapPx - letterHalfPx).coerceAtLeast(reachPx / 2f)
+    }
+    val peakOuterPx = restCenterPx + amplitudePx + letterHalfPx
+    val bubbleCenterPx = if (bubbleHalfPx <= 0f) {
+        0f
+    } else {
+        val wanted = maxOf(restCenterPx + reachPx, peakOuterPx + gapPx + bubbleHalfPx)
+        // A wide setting can put the mark beyond the screen's far edge, and the bubble goes
+        // with it rather than half off the screen.
+        wanted.coerceAtMost(screenWidthPx - bubbleHalfPx)
+    }
+    return ScrubReach(amplitudePx, bubbleCenterPx)
+}
+
 /** The vertical band the strip is laid out in, in screen pixels. */
 data class ScrubBand(val topPx: Float, val heightPx: Float) {
     val bottomPx: Float get() = topPx + heightPx

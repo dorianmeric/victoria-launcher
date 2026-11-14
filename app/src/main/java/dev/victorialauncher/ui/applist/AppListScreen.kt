@@ -162,9 +162,7 @@ private val IDLE_BOTTOM_PADDING = 32.dp
 /** Smallest comfortable row, so a tap beside a small icon still lands on its app. */
 private val MIN_ROW_HEIGHT = 48.dp
 
-/** How far rows are held back from the edge the A-Z strip occupies. */
-/**
- * How far rows are held off an edge the strip can appear on.
+/** How far rows are held off an edge the strip can appear on.
  *
  * A floor rather than the whole answer: what actually has to be cleared is the live touch
  * zone, which is as wide as its own setting and is there whether or not the letters are drawn.
@@ -172,6 +170,9 @@ private val MIN_ROW_HEIGHT = 48.dp
  * had turned them off, so tapping an icon opened the list instead of the app.
  */
 private val STRIP_INSET = 56.dp
+
+/** The bubble that names the letter under a finger on the strip. */
+private val SCRUB_BUBBLE_SIZE = 72.dp
 
 /** Sets the settings shortcut apart from the last app above it. */
 private val SETTINGS_ROW_GAP = 20.dp
@@ -220,6 +221,10 @@ fun AppListScreen(
     labelSizeSp: Int,
     band: ScrubBand,
     viewportHeightPx: Int,
+    /** Width of the screen, so the A-Z strip's own width can be measured against it. */
+    viewportWidthPx: Int,
+    /** How much of that width the strip may take, in percent. */
+    azWidthPercent: Int,
     visible: Boolean,
     favoriteKeys: Set<String>,
     onLaunch: (AppInfo) -> Unit,
@@ -1372,6 +1377,20 @@ fun AppListScreen(
         }
         }
 
+        // The wave and its bubble are placed from one reading of the width setting, so the
+        // letter a finger lights up is the letter the bubble names. A hidden bubble leaves the
+        // whole width to the wave.
+        val bubbleHalfPx = with(density) { (SCRUB_BUBBLE_SIZE / 2).toPx() }
+        val bubbleHalf = if (scrubBubbleShape == ScrubBubbleShape.HIDDEN) 0f else bubbleHalfPx
+        val stripReach = remember(azWidthPercent, viewportWidthPx, bubbleHalf, density) {
+            scrubReach(
+                widthPercent = azWidthPercent,
+                screenWidthPx = viewportWidthPx.toFloat(),
+                bubbleHalfPx = bubbleHalf,
+                density = density.density,
+            )
+        }
+
         if (showAlphabet && !searching) {
             EdgeScrubber(
                 letters = displayModel.letters,
@@ -1379,6 +1398,9 @@ fun AppListScreen(
                 pullPx = pullPx,
                 band = band,
                 side = activeSide,
+                widthPercent = azWidthPercent,
+                viewportWidthPx = viewportWidthPx.toFloat(),
+                bubbleHalfPx = bubbleHalf,
                 style = scrubStyle,
                 ripple = rippleParams,
                 modifier = Modifier.align(
@@ -1402,9 +1424,7 @@ fun AppListScreen(
 
         // Bubble for the current letter, dragged out from the strip and springing back.
         if (scrubLetter != null && scrubBubbleShape != ScrubBubbleShape.HIDDEN) {
-            val bubble = 72.dp
-            val halfPx = with(density) { (bubble / 2).toPx() }
-            val insetPx = with(density) { SCRUB_BUBBLE_INSET_DP.dp.toPx() }
+            val insetPx = stripReach.bubbleCenterPx - bubbleHalfPx
             Surface(
                 color = Color.Black.copy(alpha = 0.6f),
                 shape = when (scrubBubbleShape) {
@@ -1418,10 +1438,10 @@ fun AppListScreen(
                         val x = insetPx + pullPx()
                         IntOffset(
                             x = if (activeSide == EdgeSide.LEFT) x.roundToInt() else -x.roundToInt(),
-                            y = ((scrubY() ?: 0f) - halfPx).roundToInt(),
+                            y = ((scrubY() ?: 0f) - bubbleHalfPx).roundToInt(),
                         )
                     }
-                    .size(bubble),
+                    .size(SCRUB_BUBBLE_SIZE),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(

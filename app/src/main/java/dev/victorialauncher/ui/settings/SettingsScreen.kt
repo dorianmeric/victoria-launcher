@@ -84,6 +84,7 @@ import dev.victorialauncher.BuildConfig
 import dev.victorialauncher.data.AppFont
 import dev.victorialauncher.data.AppInfo
 import dev.victorialauncher.data.AzStripVisibility
+import dev.victorialauncher.data.AZ_WIDTH_RANGE
 import dev.victorialauncher.data.IconShape
 import dev.victorialauncher.data.EdgeSide
 import dev.victorialauncher.data.RippleParams
@@ -139,6 +140,7 @@ fun SettingsScreen(
     scrubStyle: ScrubStyle,
     scrubBubbleShape: ScrubBubbleShape,
     rippleParams: RippleParams,
+    azWidthPercent: Int,
     azStripVisibility: AzStripVisibility,
     showAlphabet: Boolean,
     sortByUsage: Boolean,
@@ -241,6 +243,7 @@ fun SettingsScreen(
     onSetScrubStyle: (ScrubStyle) -> Unit,
     onSetScrubBubbleShape: (ScrubBubbleShape) -> Unit,
     onSetRippleParams: (RippleParams) -> Unit,
+    onSetAzWidthPercent: (Int) -> Unit,
     onSetEdgeZoneWidth: (Int) -> Unit,
     onSetAzStripVisibility: (AzStripVisibility) -> Unit,
     onSetShowAlphabet: (Boolean) -> Unit,
@@ -336,6 +339,21 @@ fun SettingsScreen(
     val sectionPreviewAlpha by animateFloatAsState(
         if (sectionPreviewShown) 1f else 0f,
         label = "sectionPreviewAlpha",
+    )
+
+    // And once more for the strip's own width: it is a share of this screen, so the only way to
+    // know what 20% means is to see it drawn across the screen it is a share of.
+    var azWidthPreviewShown by remember { mutableStateOf(false) }
+    var azWidthPreviewTick by remember { mutableIntStateOf(0) }
+    LaunchedEffect(azWidthPreviewTick) {
+        if (azWidthPreviewTick == 0) return@LaunchedEffect
+        azWidthPreviewShown = true
+        delay(1400)
+        azWidthPreviewShown = false
+    }
+    val azWidthPreviewAlpha by animateFloatAsState(
+        if (azWidthPreviewShown) 1f else 0f,
+        label = "azWidthPreviewAlpha",
     )
 
     // One screen, shown a section at a time. Separate destinations would mean threading every
@@ -557,6 +575,19 @@ fun SettingsScreen(
         },
         SettingsEntry(SettingsSection.APP_LIST, stringResource(R.string.settings_edge_side), "a-z strip left right") {
             EdgeSideRow(edgeSide) { edgePreviewTick++; onSetEdgeSide(it) }
+        },
+        SettingsEntry(
+            SettingsSection.APP_LIST, stringResource(R.string.settings_az_width),
+            "a-z strip width wave reach letters middle edge",
+        ) {
+            SliderRow(
+                label = stringResource(R.string.settings_az_width),
+                value = azWidthPercent.toFloat(),
+                range = AZ_WIDTH_RANGE.first.toFloat()..AZ_WIDTH_RANGE.last.toFloat(),
+                valueLabel = "$azWidthPercent%",
+                detail = stringResource(R.string.settings_az_width_detail),
+                onValueChange = { azWidthPreviewTick++; onSetAzWidthPercent(it.roundToInt()) },
+            )
         },
         SettingsEntry(SettingsSection.APP_LIST, stringResource(R.string.settings_scrub_style), "a-z strip animation ripple wave bell") {
             ScrubStyleRow(scrubStyle, onSetScrubStyle)
@@ -1205,6 +1236,38 @@ fun SettingsScreen(
                 )
             }
         }
+        if (azWidthPreviewAlpha > 0f) {
+            // The band of screen the wave and its bubble take, filled from the edge it sits on
+            // and edged where the selected letter lands.
+            val tint = MaterialTheme.colorScheme.primary
+            val fill = tint.copy(alpha = 0.12f * azWidthPreviewAlpha)
+            val line = tint.copy(alpha = 0.9f * azWidthPreviewAlpha)
+            val share = azWidthPercent.coerceIn(AZ_WIDTH_RANGE) / 100f
+            if (edgeSide != EdgeSide.RIGHT) {
+                Box(
+                    Modifier
+                        .align(Alignment.CenterStart)
+                        .fillMaxWidth(share)
+                        .fillMaxHeight()
+                        .background(fill),
+                    contentAlignment = Alignment.CenterEnd,
+                ) {
+                    Box(Modifier.fillMaxHeight().width(2.dp).background(line))
+                }
+            }
+            if (edgeSide != EdgeSide.LEFT) {
+                Box(
+                    Modifier
+                        .align(Alignment.CenterEnd)
+                        .fillMaxWidth(share)
+                        .fillMaxHeight()
+                        .background(fill),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    Box(Modifier.fillMaxHeight().width(2.dp).background(line))
+                }
+            }
+        }
     }
 }
 
@@ -1300,6 +1363,8 @@ internal fun SliderRow(
     valueLabel: String,
     onValueChange: (Float) -> Unit,
     step: Float = 1f,
+    /** Optional second line, for a setting whose meaning is not obvious from its name. */
+    detail: String? = null,
 ) {
     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
         Row(
@@ -1332,6 +1397,13 @@ internal fun SliderRow(
             valueRange = range,
             colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary, activeTrackColor = MaterialTheme.colorScheme.primary),
         )
+        if (detail != null) {
+            Text(
+                detail,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            )
+        }
     }
 }
 
