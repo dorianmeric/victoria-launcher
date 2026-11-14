@@ -182,6 +182,8 @@ fun SettingsScreen(
     onSetRecentSection: (Boolean) -> Unit,
     recentSectionCount: Int,
     onSetRecentSectionCount: (Int) -> Unit,
+    favoritesAtTop: Boolean,
+    onSetFavoritesAtTop: (Boolean) -> Unit,
     edgeZoneInsetDp: Int,
     onSetEdgeZoneInsetDp: (Int) -> Unit,
     edgeZoneInsetAuto: Boolean,
@@ -662,6 +664,13 @@ fun SettingsScreen(
                 range = RECENT_SECTION_RANGE.first.toFloat()..RECENT_SECTION_RANGE.last.toFloat(),
                 valueLabel = recentSectionCount.toString(),
                 onValueChange = { onSetRecentSectionCount(it.toInt()) },
+            )
+        },
+        SettingsEntry(SettingsSection.APP_LIST, stringResource(R.string.settings_favorites_at_top), "favorites star top of list") {
+            SwitchRowWithDetail(
+                label = stringResource(R.string.settings_favorites_at_top),
+                detail = stringResource(R.string.settings_favorites_at_top_detail),
+                checked = favoritesAtTop, onCheckedChange = onSetFavoritesAtTop,
             )
         },
         SettingsEntry(SettingsSection.APP_LIST, stringResource(R.string.settings_mark_work_apps), "work profile duplicate apps") {

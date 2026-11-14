@@ -13,13 +13,20 @@ import java.text.Normalizer
 /** Section tags, which only have to be distinct from each other and from no tag at all. */
 internal const val PRIVATE_SECTION = "private"
 internal const val RECENT_SECTION = "recent"
+internal const val FAVORITES_SECTION = "favorites"
 
 /** The section an open folder's apps are listed in, one per folder. */
 internal fun folderSection(id: String) = "folder:$id"
 
 @Immutable
 sealed interface AppListRow {
-    data class Header(val text: String) : AppListRow
+    data class Header(
+        val text: String,
+        /**
+         * The favorites heading, drawn with a star where every other heading is its name alone.
+         */
+        val starred: Boolean = false,
+    ) : AppListRow
 
     /**
      * One app, and which part of the list it is in.
@@ -237,6 +244,20 @@ fun buildAppListModel(
     privateSectionLabel: String? = null,
     /** Heading and how many, for a section of what was installed most recently. */
     recentSection: Pair<String, Int>? = null,
+    /**
+     * Heading for the favorites at the very top of the list, or null to leave them out.
+     *
+     * The apps themselves come from [favoriteKeys]; the heading is only what they are called.
+     */
+    favoritesSection: String? = null,
+    /**
+     * The apps starred by hand, in the order they were put in.
+     *
+     * Order kept rather than sorted, because this is the list the home screen carries and an
+     * app's place in it is something a person chose. Tokens naming no app here — a folder, or
+     * an app since uninstalled — resolve to nothing.
+     */
+    favoriteKeys: List<String> = emptyList(),
     /** Whether names that are not A-Z file under kana rows and kanji, as a Japanese phone sorts. */
     japanese: Boolean = false,
     /** Folders to file among the apps, or none to keep them on the home screen only. */
@@ -252,7 +273,20 @@ fun buildAppListModel(
     val visible = all.filterNot {
         it.kind == EntryKind.PRIVATE_SPACE || (privateSectionLabel != null && it.privateProfile)
     }
+    val visibleByKey = visible.associateBy { it.key }
     val rows = mutableListOf<AppListRow>()
+
+    // First, under a star, in the order they were put in: that is the order the home screen
+    // keeps them in, and the point of having them here is finding one without knowing what it
+    // is called. Not given a letter — a shortlist is not part of the alphabet, and everything
+    // in it is also under its own letter below.
+    if (favoritesSection != null) {
+        val favorites = favoriteKeys.mapNotNull { visibleByKey[it] }.distinctBy { it.key }
+        if (favorites.isNotEmpty()) {
+            rows += AppListRow.Header(favoritesSection, starred = true)
+            favorites.forEach { rows += AppListRow.Entry(it, section = FAVORITES_SECTION) }
+        }
+    }
 
     val byLetter = visible.groupBy { app ->
         filingLetter(displayName(app), renamed(app), japanese) { englishName(app) }
@@ -260,7 +294,6 @@ fun buildAppListModel(
 
     // Filed by the name they were given, the way a renamed app is. One whose apps are all
     // hidden or gone has nothing to open, so it is left out.
-    val visibleByKey = visible.associateBy { it.key }
     val foldersByLetter = folders.mapNotNull { folder ->
         val members = folder.apps.mapNotNull { visibleByKey[it] }
         if (members.isEmpty()) null else AppListRow.FolderRow(folder, members, folder.id in expandedFolders)
@@ -331,11 +364,17 @@ fun AppListModel.filtered(match: (AppInfo) -> Boolean): AppListModel {
             cursor++
         }
         when (row) {
-            is AppListRow.Header -> pendingHeader = row
+            // A search is a list of apps, not of the places they are filed in. The starred
+            // heading has no letter, and none of its apps is ever kept here — they are found
+            // under their own letters — so holding it back leaves nothing above the first
+            // match when the list is drawn without headings.
+            is AppListRow.Header -> pendingHeader = row.takeUnless { it.starred }
             // A search finds apps, and each once: a folder's apps are already under their
-            // own letters.
+            // own letters, and so is everything in the favorites at the top.
             is AppListRow.FolderRow -> Unit
-            is AppListRow.Entry -> if (!row.inFolder && match(row.app)) {
+            is AppListRow.Entry -> if (
+                !row.inFolder && row.section != FAVORITES_SECTION && match(row.app)
+            ) {
                 // Recorded before the heading is added, so the letter points at the heading
                 // where there is one and at its first app where there is not.
                 if (!letterKept) {

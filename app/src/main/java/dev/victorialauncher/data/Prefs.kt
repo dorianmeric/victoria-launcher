@@ -230,6 +230,7 @@ class Prefs(private val context: Context) {
         val FOLDERS_IN_APP_LIST = booleanPreferencesKey("folders_in_app_list")
         val RECENT_SECTION = booleanPreferencesKey("recent_section")
         val RECENT_SECTION_COUNT = intPreferencesKey("recent_section_count")
+        val FAVORITES_AT_TOP = booleanPreferencesKey("favorites_at_top")
         val SHOW_APP_ICONS = booleanPreferencesKey("show_app_icons")
         val SHOW_FAVORITE_ICONS = booleanPreferencesKey("show_favorite_icons")
         val FAVORITES_SOURCE = stringPreferencesKey("favorites_source")
@@ -790,6 +791,15 @@ class Prefs(private val context: Context) {
     val recentSectionCount: Flow<Int> =
         data.map { (it[Keys.RECENT_SECTION_COUNT] ?: 5).coerceIn(RECENT_SECTION_RANGE) }
             .distinctUntilChanged()
+
+    /**
+     * Whether the app list opens with the favorites under a star.
+     *
+     * Off by default: the list has always been one alphabet, and a shortlist above it is a
+     * second way to find the same apps that someone has to ask for.
+     */
+    val favoritesAtTop: Flow<Boolean> =
+        data.map { it[Keys.FAVORITES_AT_TOP] ?: false }.distinctUntilChanged()
 
     /**
      * Whether unlocking the private space leaves the app list open.
@@ -1424,6 +1434,10 @@ class Prefs(private val context: Context) {
 
     suspend fun setRecentSectionCount(v: Int) {
         context.dataStore.edit { it[Keys.RECENT_SECTION_COUNT] = v.coerceIn(RECENT_SECTION_RANGE) }
+    }
+
+    suspend fun setFavoritesAtTop(v: Boolean) {
+        context.dataStore.edit { it[Keys.FAVORITES_AT_TOP] = v }
     }
 
     suspend fun setStayAfterPrivateUnlock(v: Boolean) {

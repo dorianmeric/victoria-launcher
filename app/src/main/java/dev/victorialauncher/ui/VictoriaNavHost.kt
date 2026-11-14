@@ -299,6 +299,7 @@ fun VictoriaNavHost(
     val foldersInAppList by app.prefs.foldersInAppList.collectAsState(initial = false)
     val recentSection by app.prefs.recentSection.collectAsState(initial = false)
     val recentSectionCount by app.prefs.recentSectionCount.collectAsState(initial = 5)
+    val favoritesAtTop by app.prefs.favoritesAtTop.collectAsState(initial = false)
     val edgeZoneInsetDp by app.prefs.edgeZoneInsetDp.collectAsState(initial = 0)
     val edgeZoneInsetAuto by app.prefs.edgeZoneInsetAuto.collectAsState(initial = true)
     val webSearchFallback by app.prefs.webSearchFallback.collectAsState(initial = false)
@@ -567,6 +568,7 @@ fun VictoriaNavHost(
         foldersInAppList = foldersInAppList,
         recentSection = recentSection,
         recentSectionCount = recentSectionCount,
+        favoritesAtTop = favoritesAtTop,
         edgeZoneInsetDp = edgeZoneInsetDp,
         edgeZoneInsetAuto = edgeZoneInsetAuto,
         webSearchFallback = webSearchFallback,
@@ -778,6 +780,8 @@ fun VictoriaNavHost(
                 onSetRecentSection = { scope.launch { app.prefs.setRecentSection(it) } },
                 recentSectionCount = recentSectionCount,
                 onSetRecentSectionCount = { scope.launch { app.prefs.setRecentSectionCount(it) } },
+                favoritesAtTop = favoritesAtTop,
+                onSetFavoritesAtTop = { scope.launch { app.prefs.setFavoritesAtTop(it) } },
                 onSetTextShadow = { scope.launch { app.prefs.setTextShadow(it) } },
                 edgeZoneInsetDp = edgeZoneInsetDp,
                 edgeZoneInsetAuto = edgeZoneInsetAuto,

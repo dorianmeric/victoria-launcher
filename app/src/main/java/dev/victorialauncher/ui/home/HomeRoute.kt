@@ -183,6 +183,10 @@ fun HomeRoute(
     } else {
         null
     }
+    // The star at the top of the list. Read here for the same reason, and only while the
+    // setting asks for it: the section is left out of the model entirely when it is off.
+    val favoritesSectionLabel = stringResource(R.string.applist_favorites_section)
+        .takeIf { settings.favoritesAtTop }
     // Asked once: whether anything on this phone handles a web search at all.
     val webSearchAvailable = remember(context) {
         runCatching {
@@ -217,6 +221,8 @@ fun HomeRoute(
         settings.showListHeaders,
         listFolders,
         listOpenFolders,
+        favoritesSectionLabel,
+        favoriteKeys,
     ) {
         val apps = appsByKey.values.toList()
         val counts = if (settings.sortByUsage) launchCounts else emptyMap()
@@ -234,6 +240,8 @@ fun HomeRoute(
                 japanese = japanese,
                 folders = listFolders,
                 expandedFolders = listOpenFolders,
+                favoritesSection = favoritesSectionLabel,
+                favoriteKeys = favoriteKeys,
             )
         }
     }
@@ -1161,6 +1169,8 @@ data class HomeSettings(
     val foldersInAppList: Boolean,
     val recentSection: Boolean,
     val recentSectionCount: Int,
+    /** Whether the app list opens with the favorites under a star. */
+    val favoritesAtTop: Boolean,
     val edgeZoneInsetDp: Int,
     val edgeZoneInsetAuto: Boolean,
     val stayAfterPrivateUnlock: Boolean,

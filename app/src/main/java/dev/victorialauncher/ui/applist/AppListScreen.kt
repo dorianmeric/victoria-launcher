@@ -1250,7 +1250,8 @@ fun AppListScreen(
                     },
                 ) {
                 when (row) {
-                    is AppListRow.Header -> SectionHeader(row.text, labelSizeSp, contentColor, alignment)
+                    is AppListRow.Header ->
+                        SectionHeader(row.text, labelSizeSp, contentColor, alignment, row.starred)
                     is AppListRow.FolderRow -> FolderListRow(
                         row = row,
                         contentColor = contentColor,
@@ -1438,7 +1439,14 @@ fun AppListScreen(
 }
 
 @Composable
-private fun SectionHeader(text: String, labelSizeSp: Int, contentColor: Color, alignment: HomeAlignment) {
+private fun SectionHeader(
+    text: String,
+    labelSizeSp: Int,
+    contentColor: Color,
+    alignment: HomeAlignment,
+    /** Whether this is the favorites at the top, which is marked with a star. */
+    starred: Boolean = false,
+) {
     Box(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 28.dp),
         contentAlignment = when (alignment) {
@@ -1447,13 +1455,25 @@ private fun SectionHeader(text: String, labelSizeSp: Int, contentColor: Color, a
             HomeAlignment.RIGHT -> Alignment.CenterEnd
         },
     ) {
-        Text(
-            text = text,
-            color = contentColor,
-            fontSize = (labelSizeSp + 2).sp,
-            fontWeight = FontWeight.Bold,
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(top = 18.dp, bottom = 6.dp),
-        )
+        ) {
+            if (starred) {
+                Icon(
+                    Icons.Filled.Star,
+                    contentDescription = null,
+                    tint = contentColor,
+                    modifier = Modifier.padding(end = 8.dp).size((labelSizeSp + 4).dp),
+                )
+            }
+            Text(
+                text = text,
+                color = contentColor,
+                fontSize = (labelSizeSp + 2).sp,
+                fontWeight = FontWeight.Bold,
+            )
+        }
     }
 }
 

@@ -194,6 +194,7 @@
     <string name="settings_favorites_detail">Choose which apps sit on the home screen</string>
     <string name="applist_private_space_section">Private Space</string>
     <string name="applist_recent_section">Recently installed</string>
+    <string name="applist_favorites_section">Favorites</string>
     <string name="settings_stay_private_unlock">Stay in the list after unlocking</string>
     <string name="settings_stay_private_unlock_detail">Unlocking Private Space keeps the app list open instead of going back to the home screen</string>
     <string name="settings_private_space_section">Private Space section</string>
@@ -205,6 +206,8 @@
     <string name="settings_recent_section">Recently installed section</string>
     <string name="settings_recent_section_detail">Ends the app list with whatever arrived most recently</string>
     <string name="settings_recent_section_count">How many recent apps</string>
+    <string name="settings_favorites_at_top">Favorites at the top</string>
+    <string name="settings_favorites_at_top_detail">Starts the app list with a star and the apps you have starred, in your own order. They stay under their own letters too</string>
     <string name="settings_compact_tap">Tap only the icon and name</string>
     <string name="settings_compact_tap_detail">A favorite opens only when you tap its icon or name, not anywhere along its line</string>
     <string name="settings_text_shadow_strength">Shadow strength</string>
