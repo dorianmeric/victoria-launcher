@@ -18,6 +18,13 @@
          and it only takes effect while this launcher holds the home role. -->
     <uses-permission android:name="android.permission.ACCESS_HIDDEN_PROFILES" />
 
+    <!-- Removing a package is the system's to do, but since API 28 even asking it to needs this;
+         the confirmation dialog is the system's own. Stopping an app's background processes —
+         what the long-press menu calls "Force close" — is a normal permission, granted at
+         install with no prompt. -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+    <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
+
     <!-- Asked for at the moment the clock widget is set to show what is coming up, never at
          install. Read only, and nothing read here leaves the phone: there is no network
          permission to send it with. -->

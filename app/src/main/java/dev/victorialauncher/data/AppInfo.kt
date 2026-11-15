@@ -84,4 +84,12 @@ data class AppInfo(
     }
 
     val packageName: String get() = componentName.packageName
+
+    /**
+     * Whether this app lives in the profile the launcher itself runs in.
+     *
+     * Zero is that profile's serial — see [userSerial]. What the launcher may do to an app from
+     * here, stopping it above all, is refused for one in any other profile.
+     */
+    val inOwnProfile: Boolean get() = userSerial == 0L
 }

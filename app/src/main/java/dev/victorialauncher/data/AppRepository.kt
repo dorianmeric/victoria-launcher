@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package dev.victorialauncher.data
 
+import android.app.ActivityManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -747,5 +748,46 @@ class AppRepository(
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         runCatching { context.startActivity(intent) }
+    }
+
+    /**
+     * Hands [app] to the system to remove, which asks for confirmation in its own dialog.
+     *
+     * A launcher cannot uninstall a package itself, and should not: the system's dialog is where
+     * the consequences get said out loud. An app in another profile is that profile's to remove,
+     * and the installer here will not do it — so its own details page is opened instead, which
+     * offers the same thing from the profile that owns it.
+     */
+    fun requestUninstall(app: AppInfo): Boolean {
+        if (app.kind != EntryKind.APP) return false
+        if (app.componentName.packageName == context.packageName) return false
+        if (!app.inOwnProfile) {
+            openAppInfo(app)
+            return true
+        }
+        val intent = Intent(
+            Intent.ACTION_DELETE,
+            Uri.fromParts("package", app.componentName.packageName, null),
+        ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        return runCatching { context.startActivity(intent) }.isSuccess
+    }
+
+    /**
+     * Stops what [app] has running.
+     *
+     * As close to "force close" as a launcher gets: stopping a package outright is the system's
+     * own privilege, while killing its background processes is a call anyone may make. What the
+     * app had running goes with them and the next launch starts from scratch, which is what the
+     * menu item is for. Refused for an app in another profile — those processes are that
+     * profile's, and the call from here is answered with nothing.
+     */
+    fun forceStop(app: AppInfo): Boolean {
+        if (app.kind != EntryKind.APP) return false
+        if (!app.inOwnProfile) return false
+        val manager = context.getSystemService(ActivityManager::class.java) ?: return false
+        return runCatching {
+            manager.killBackgroundProcesses(app.componentName.packageName)
+            true
+        }.getOrDefault(false)
     }
 }

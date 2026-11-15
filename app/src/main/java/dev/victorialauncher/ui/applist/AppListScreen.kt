@@ -1617,6 +1617,29 @@ private fun AppRow(
                     leadingIcon = { Icon(Icons.Filled.Info, contentDescription = null) },
                     onClick = { onDismissMenu(); onAppInfo() },
                 )
+                // Asked of the repository, which routes each to what the system will do: its own
+                // uninstall dialog, and its own process killer.
+                val context = LocalContext.current
+                // Another profile's processes are that profile's to stop; its app info screen,
+                // one line up, is where its own Force stop lives.
+                if (app.inOwnProfile) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.action_force_close)) },
+                        leadingIcon = { Icon(Icons.Filled.Close, contentDescription = null) },
+                        onClick = {
+                            onDismissMenu()
+                            (context.applicationContext as VictoriaApp).appRepository.forceStop(app)
+                        },
+                    )
+                }
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.action_uninstall)) },
+                    leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null) },
+                    onClick = {
+                        onDismissMenu()
+                        (context.applicationContext as VictoriaApp).appRepository.requestUninstall(app)
+                    },
+                )
             }
             if (app.kind == EntryKind.PRIVATE_SPACE && app.componentName.className == PRIVATE_SPACE_UNLOCKED_CLASS) {
                 val context = LocalContext.current

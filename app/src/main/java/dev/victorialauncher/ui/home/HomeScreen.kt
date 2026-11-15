@@ -2,6 +2,7 @@
 package dev.victorialauncher.ui.home
 
 import dev.victorialauncher.ui.common.topBarInsets
+import dev.victorialauncher.VictoriaApp
 import android.widget.Toast
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -57,6 +58,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Checklist
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.Done
@@ -1441,6 +1443,29 @@ private fun FavoriteRow(
                     leadingIcon = { Icon(Icons.Filled.Info, contentDescription = null) },
                     onClick = onAppInfo,
                 )
+                // Asked of the launcher's own repository, which routes each to what the system
+                // will actually do: its own uninstall dialog, and its own process killer.
+                val context = LocalContext.current
+                // Another profile's processes are that profile's to stop; its app info screen,
+                // one line up, is where its own Force stop lives.
+                if (app.inOwnProfile) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.action_force_close)) },
+                        leadingIcon = { Icon(Icons.Filled.Close, contentDescription = null) },
+                        onClick = {
+                            onDismissMenu()
+                            (context.applicationContext as VictoriaApp).appRepository.forceStop(app)
+                        },
+                    )
+                }
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.action_uninstall)) },
+                    leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null) },
+                    onClick = {
+                        onDismissMenu()
+                        (context.applicationContext as VictoriaApp).appRepository.requestUninstall(app)
+                    },
+                )
             }
             // Distinct from Remove below, which only takes it off the home screen: this hands
             // it back to the app that pinned it, and it leaves the launcher entirely.
@@ -1800,6 +1825,25 @@ private fun FolderRow(
                                 text = { Text(stringResource(R.string.action_app_info)) },
                                 leadingIcon = { Icon(Icons.Filled.Info, contentDescription = null) },
                                 onClick = { memberMenuFor = null; onMemberAppInfo(member) },
+                            )
+                            val context = LocalContext.current
+                            if (member.inOwnProfile) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.action_force_close)) },
+                                    leadingIcon = { Icon(Icons.Filled.Close, contentDescription = null) },
+                                    onClick = {
+                                        memberMenuFor = null
+                                        (context.applicationContext as VictoriaApp).appRepository.forceStop(member)
+                                    },
+                                )
+                            }
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.action_uninstall)) },
+                                leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null) },
+                                onClick = {
+                                    memberMenuFor = null
+                                    (context.applicationContext as VictoriaApp).appRepository.requestUninstall(member)
+                                },
                             )
                         }
                         if (member.kind == EntryKind.SHORTCUT) {
