@@ -3,7 +3,6 @@ package dev.victorialauncher.ui.settings
 
 import dev.victorialauncher.ui.applist.scrubEdgeInsetDp
 import dev.victorialauncher.ui.applist.scrubBellDp
-import dev.victorialauncher.ui.applist.scrubBubbleInsetDp
 import dev.victorialauncher.data.SCRUB_REACH_RANGE
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.layout.offset
@@ -99,7 +98,6 @@ import dev.victorialauncher.data.ScrubBubbleShape
 import dev.victorialauncher.data.EDGE_ZONE_INSET_RANGE
 import dev.victorialauncher.data.HOLD_SCROLL_RANGE
 import dev.victorialauncher.data.RECENT_SECTION_RANGE
-import dev.victorialauncher.data.ROW_SPACING_RANGE
 import dev.victorialauncher.data.SECTION_TOP_RANGE
 import dev.victorialauncher.data.FREQUENT_RANGE
 import dev.victorialauncher.data.FavoritesSource
@@ -191,8 +189,6 @@ fun SettingsScreen(
     onSetRecentSection: (Boolean) -> Unit,
     recentSectionCount: Int,
     onSetRecentSectionCount: (Int) -> Unit,
-    appListRowSpacingDp: Int,
-    onSetAppListRowSpacingDp: (Int) -> Unit,
     favoritesAtTop: Boolean,
     onSetFavoritesAtTop: (Boolean) -> Unit,
     edgeZoneInsetDp: Int,
@@ -409,6 +405,7 @@ fun SettingsScreen(
                 label = stringResource(R.string.settings_favorite_spacing),
                 value = itemSpacingDp.toFloat(), range = 0f..40f,
                 valueLabel = "${itemSpacingDp}dp",
+                detail = stringResource(R.string.settings_favorite_spacing_detail),
                 onValueChange = { onSetItemSpacing(it.toInt()) },
             )
         },
@@ -679,19 +676,6 @@ fun SettingsScreen(
                 range = RECENT_SECTION_RANGE.first.toFloat()..RECENT_SECTION_RANGE.last.toFloat(),
                 valueLabel = recentSectionCount.toString(),
                 onValueChange = { onSetRecentSectionCount(it.toInt()) },
-            )
-        },
-        SettingsEntry(
-            SettingsSection.APP_LIST, stringResource(R.string.settings_row_spacing),
-            "row height spacing density compact app list",
-        ) {
-            SliderRow(
-                label = stringResource(R.string.settings_row_spacing),
-                value = appListRowSpacingDp.toFloat(),
-                range = ROW_SPACING_RANGE.first.toFloat()..ROW_SPACING_RANGE.last.toFloat(),
-                valueLabel = "${appListRowSpacingDp}dp",
-                detail = stringResource(R.string.settings_row_spacing_detail),
-                onValueChange = { onSetAppListRowSpacingDp(it.toInt()) },
             )
         },
         SettingsEntry(SettingsSection.APP_LIST, stringResource(R.string.settings_favorites_at_top), "favorites star top of list") {
@@ -1950,10 +1934,11 @@ private fun ShortcutSwipeRow(selected: ShortcutSwipe, onSelect: (ShortcutSwipe) 
 }
 
 /**
- * How far the A-Z wave reaches toward the middle, and the letter bubble with it (#163).
+ * How far the A-Z wave reaches toward the middle (#163).
  *
- * Drawn at the size it really is: the strip, the bulge and the bubble keep their true distances
- * from the screen edge, so what the slider shows is where the bubble will land over the list.
+ * Drawn at the size it really is: the strip and the bulge keep their true distances from the
+ * screen edge, and the letter under the finger is marked the way the list marks it, so what
+ * the slider shows is where the wave comes out over the list.
  */
 @Composable
 private fun ScrubReachRow(
@@ -1968,7 +1953,6 @@ private fun ScrubReachRow(
     val letters = "HIJKLMNOP"
     val spacing = 18.dp
     val middle = letters.length / 2
-    val bubble = 72.dp
     val previewHeight = spacing * letters.length
     val onSurface = MaterialTheme.colorScheme.onSurface
     Column(modifier = Modifier.padding(vertical = 4.dp)) {
@@ -1986,7 +1970,7 @@ private fun ScrubReachRow(
                 .height(previewHeight)
                 .background(onSurface.copy(alpha = 0.05f)),
         ) {
-            // Stand-ins for app names, so it shows what the bubble covers.
+            // Stand-ins for app names, so it shows what the wave comes out over.
             Column(
                 modifier = Modifier
                     .align(if (fromLeft) Alignment.CenterEnd else Alignment.CenterStart)
@@ -2006,6 +1990,7 @@ private fun ScrubReachRow(
                 val d = (index - middle).toFloat()
                 // The same bell the strip draws, its finger held on the middle letter.
                 val outward = scrubBellDp(reach) * kotlin.math.exp(-(d * d) / (2f * 2.6f * 2.6f))
+                val marked = index == middle && bubbleShape != ScrubBubbleShape.HIDDEN
                 Box(
                     modifier = Modifier
                         .align(anchor)
@@ -2016,30 +2001,26 @@ private fun ScrubReachRow(
                         .size(20.dp, spacing),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(c.toString(), fontSize = 13.sp, color = onSurface.copy(alpha = if (index == middle) 1f else 0.6f))
-                }
-            }
-            if (bubbleShape != ScrubBubbleShape.HIDDEN) {
-                val inset = scrubBubbleInsetDp(reach).dp
-                Box(
-                    modifier = Modifier
-                        .align(anchor)
-                        .offset(
-                            x = if (fromLeft) inset else -inset,
-                            y = spacing * middle + spacing / 2 - bubble / 2,
-                        )
-                        .size(bubble)
-                        .background(
-                            Color.Black.copy(alpha = 0.6f),
-                            when (bubbleShape) {
-                                ScrubBubbleShape.CIRCLE -> CircleShape
-                                ScrubBubbleShape.SQUARE -> RectangleShape
-                                else -> RoundedCornerShape(22.dp)
-                            },
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(letters[middle].toString(), color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Bold)
+                    if (marked) {
+                        // The mark the strip itself draws: a white disk with a black letter on it.
+                        Box(
+                            modifier = Modifier
+                                .size(18.dp)
+                                .background(
+                                    Color.White,
+                                    when (bubbleShape) {
+                                        ScrubBubbleShape.CIRCLE -> CircleShape
+                                        ScrubBubbleShape.SQUARE -> RectangleShape
+                                        else -> RoundedCornerShape(5.dp)
+                                    },
+                                ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(c.toString(), fontSize = 13.sp, color = Color.Black)
+                        }
+                    } else {
+                        Text(c.toString(), fontSize = 13.sp, color = onSurface.copy(alpha = 0.6f))
+                    }
                 }
             }
         }

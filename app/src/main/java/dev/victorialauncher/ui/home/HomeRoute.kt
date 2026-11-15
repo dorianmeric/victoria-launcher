@@ -868,7 +868,7 @@ fun HomeRoute(
                 scrub = scrub,
                 iconSizeDp = settings.iconSizeDp,
                 labelSizeSp = settings.labelSizeSp,
-                rowSpacingDp = settings.appListRowSpacingDp,
+                rowSpacingDp = settings.itemSpacingDp,
                 band = band,
                 viewportHeightPx = viewportHeightPx,
                 visible = appListVisible,
@@ -992,6 +992,7 @@ fun HomeRoute(
                 pullPx = { 0f },
                 band = band,
                 side = scrub.side,
+                bubbleShape = settings.scrubBubbleShape,
                 style = settings.scrubStyle,
                 ripple = settings.rippleParams,
                 modifier = Modifier.align(
@@ -1133,6 +1134,7 @@ private fun iconPickerRoute(key: String) = "iconpicker/" + Uri.encode(key)
 data class HomeSettings(
     val iconSizeDp: Int,
     val labelSizeSp: Int,
+    /** Spacing between favorites, which also sets the room above and below each list row. */
     val itemSpacingDp: Int,
     val sidePaddingDp: Int,
     val nowPlayingHeightDp: Int,
@@ -1172,8 +1174,6 @@ data class HomeSettings(
     val foldersInAppList: Boolean,
     val recentSection: Boolean,
     val recentSectionCount: Int,
-    /** Room above and below each app list row, in dp. */
-    val appListRowSpacingDp: Int,
     /** Whether the app list opens with the favorites under a star. */
     val favoritesAtTop: Boolean,
     val edgeZoneInsetDp: Int,

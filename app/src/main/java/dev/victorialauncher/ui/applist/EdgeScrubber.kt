@@ -18,6 +18,10 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
@@ -26,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.victorialauncher.data.EdgeSide
 import dev.victorialauncher.data.RippleParams
+import dev.victorialauncher.data.ScrubBubbleShape
 import dev.victorialauncher.data.ScrubStyle
 import kotlinx.coroutines.flow.first
 import kotlin.math.abs
@@ -35,30 +40,20 @@ import kotlin.math.roundToInt
 /**
  * How far the bulge pushes the column away from the edge at its peak.
  *
- * Has to clear the fingertip without reaching the bubble. The thumb is already an edge-zone in
- * from the screen edge, so at 75dp the peak landed about 7dp from it — underneath, hidden by
- * the hand pointing at it — while the bubble beginning at 122dp left only about 19dp of room
- * to move into. The two only go further out together, which is what [scrubBubbleInsetDp]
- * is for.
+ * Has to clear the fingertip: the thumb is already an edge-zone in from the screen edge, so a
+ * smaller bulge parked the peak about 7dp from it — underneath, hidden by the hand pointing
+ * at it.
  */
 private const val BELL_AMPLITUDE_DP = 112f
 
-/** Half the letter cell, so the peak is measured by its edge rather than its middle. */
-private const val LETTER_HALF_DP = 10f
+/** Diameter of the disk drawn behind the letter the finger is on. */
+private const val LETTER_HIGHLIGHT_DP = 22f
 
-/**
- * Where the letter bubble starts, kept a fixed gap beyond the peak of the bell.
- *
- * Derived rather than written down twice: the bubble sat at a number of its own, so growing
- * the bulge to clear a fingertip walked the strip straight into it. [reach] is the share of
- * the full bulge in use, so a shorter wave brings the bubble in toward the edge with it (#163).
- */
 /** The bulge at its peak for [reach], for drawing the wave outside the strip itself. */
 fun scrubBellDp(reach: Float = 1f): Float = BELL_AMPLITUDE_DP * reach
 
 /** How far in from the screen edge the letters sit at rest. */
 fun scrubEdgeInsetDp(): Float = EDGE_INSET_DP
-fun scrubBubbleInsetDp(reach: Float = 1f): Float = EDGE_INSET_DP + BELL_AMPLITUDE_DP * reach + LETTER_HALF_DP + 18f
 
 // ---- Ripple simulation -----------------------------------------------------------------------
 private const val SIM_DT = 1f / 240f
@@ -109,6 +104,9 @@ private class RippleString(private val n: Int) {
  * the finger lifts. Scaling the glyphs (what this used to do) just stretched them until
  * they looked pixelated.
  *
+ * The letter the finger is on is marked in place — a white disk behind it, in [bubbleShape],
+ * with a black glyph on the disk — rather than named by a bubble floating beside the strip.
+ *
  * [scrubY] and [pullPx] are read as lambdas inside a graphicsLayer so the whole strip
  * animates in the draw phase; recomposing 26 Text nodes per pointer move made this jitter.
  */
@@ -119,10 +117,12 @@ fun EdgeScrubber(
     pullPx: () -> Float,
     band: ScrubBand,
     side: EdgeSide,
+    /** Shape of the mark on the letter the finger is on; [ScrubBubbleShape.HIDDEN] draws none. */
+    bubbleShape: ScrubBubbleShape = ScrubBubbleShape.CIRCLE,
     modifier: Modifier = Modifier,
     style: ScrubStyle = ScrubStyle.BELL,
     ripple: RippleParams = RippleParams(),
-    /** Share of the full bulge, 0..1 — see [scrubBubbleInsetDp]. */
+    /** Share of the full bulge, 0..1 — see [scrubBellDp]. */
     reach: Float = 1f,
 ) {
     if (letters.isEmpty()) return
@@ -190,6 +190,17 @@ fun EdgeScrubber(
     ) {
         letters.forEachIndexed { index, c ->
             val centerY = centerYs[index]
+            // Read in the draw phase, so the mark follows the finger without recomposing the
+            // strip: a letter is marked while the finger is inside its own cell. A hidden mark
+            // marks nothing at all — the black glyph is only a letter when there is a white disk
+            // behind it to read it against.
+            val marked = {
+                val y = scrubY()
+                bubbleShape != ScrubBubbleShape.HIDDEN && y != null && abs(y - centerY) <= spacingPx / 2f
+            }
+            // Never wider than the cell it is in: a crowded alphabet is 15dp per letter, and a
+            // disk bigger than that spills over the letters above and below it.
+            val highlightPx = (LETTER_HIGHLIGHT_DP * density).coerceAtMost(spacingPx)
 
             Box(
                 modifier = Modifier
@@ -219,10 +230,36 @@ fun EdgeScrubber(
                         // Position only — the glyph is never scaled.
                         translationX = if (side == EdgeSide.LEFT) outward else -outward
                         alpha = 0.55f + 0.45f * gain
+                    }
+                    // Inside the layer above, so the mark travels with the letter it is on.
+                    .drawBehind {
+                        if (!marked()) return@drawBehind
+                        val radius = highlightPx / 2f
+                        val center = Offset(size.width / 2f, size.height / 2f)
+                        val topLeft = Offset(center.x - radius, center.y - radius)
+                        val box = Size(highlightPx, highlightPx)
+                        when (bubbleShape) {
+                            ScrubBubbleShape.CIRCLE -> drawCircle(Color.White, radius, center)
+                            ScrubBubbleShape.SQUARE -> drawRect(Color.White, topLeft, box)
+                            else -> drawRoundRect(Color.White, topLeft, box, CornerRadius(highlightPx * 0.25f))
+                        }
                     },
                 contentAlignment = Alignment.Center,
             ) {
-                Text(text = c.toString(), fontSize = 13.sp, color = Color.White)
+                // Two glyphs, one showing at a time: the mark's white disk needs a black letter
+                // on it, and which one is on the disk changes with the finger, not composition.
+                Text(
+                    text = c.toString(),
+                    fontSize = 13.sp,
+                    color = Color.White,
+                    modifier = Modifier.graphicsLayer { alpha = if (marked()) 0f else 1f },
+                )
+                Text(
+                    text = c.toString(),
+                    fontSize = 13.sp,
+                    color = Color.Black,
+                    modifier = Modifier.graphicsLayer { alpha = if (marked()) 1f else 0f },
+                )
             }
         }
     }

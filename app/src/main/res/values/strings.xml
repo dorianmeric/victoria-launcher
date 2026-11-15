@@ -107,7 +107,8 @@
     <string name="settings_icon_pack_none">No icon pack apps found on this device.</string>
     <string name="settings_icon_size">Icon size</string>
     <string name="settings_text_size">Text size</string>
-    <string name="settings_favorite_spacing">Spacing between favorites</string>
+    <string name="settings_favorite_spacing">Spacing</string>
+    <string name="settings_favorite_spacing_detail">Between favorites, and above and below each row of the app list</string>
     <string name="settings_font">Font</string>
     <string name="settings_text_color">Text color</string>
     <string name="settings_text_color_detail">Auto reads the wallpaper and picks whichever is legible</string>
@@ -127,7 +128,7 @@
     <string name="settings_scrub_style">A-Z strip animation</string>
     <string name="scrub_style_bell">Bell</string>
     <string name="scrub_style_ripple">Ripple</string>
-    <string name="settings_scrub_bubble">Letter bubble</string>
+    <string name="settings_scrub_bubble">Letter highlight</string>
     <string name="settings_scrub_reach">Wave reach</string>
     <string name="scrub_bubble_rounded">Rounded</string>
     <string name="scrub_bubble_circle">Circle</string>
@@ -207,8 +208,6 @@
     <string name="settings_recent_section">Recently installed section</string>
     <string name="settings_recent_section_detail">Ends the app list with whatever arrived most recently</string>
     <string name="settings_recent_section_count">How many recent apps</string>
-    <string name="settings_row_spacing">Row spacing</string>
-    <string name="settings_row_spacing_detail">Room above and below each app in the list. Less fits more of the alphabet on screen at once</string>
     <string name="settings_favorites_at_top">Favorites at the top</string>
     <string name="settings_favorites_at_top_detail">Starts the app list with a star and the apps you have starred, in your own order. They stay under their own letters too</string>
     <string name="settings_compact_tap">Tap only the icon and name</string>

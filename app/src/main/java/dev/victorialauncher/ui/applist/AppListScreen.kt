@@ -55,7 +55,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Folder
@@ -70,7 +69,6 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.LocalTextStyle
 import dev.victorialauncher.ui.theme.launcherTextShadow
@@ -95,7 +93,6 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -110,7 +107,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpOffset
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
@@ -180,9 +176,6 @@ private val MIN_HEADER_TOP_PADDING = 6.dp
  * had turned them off, so tapping an icon opened the list instead of the app.
  */
 private val STRIP_INSET = 56.dp
-
-/** The bubble that names the letter under a finger on the strip. */
-private val SCRUB_BUBBLE_SIZE = 72.dp
 
 /** Sets the settings shortcut apart from the last app above it. */
 private val SETTINGS_ROW_GAP = 20.dp
@@ -1400,6 +1393,7 @@ fun AppListScreen(
                 pullPx = pullPx,
                 band = band,
                 side = activeSide,
+                bubbleShape = scrubBubbleShape,
                 style = scrubStyle,
                 ripple = rippleParams,
                 reach = scrubReach,
@@ -1420,39 +1414,6 @@ fun AppListScreen(
                 },
                 onDismiss = { editDialogFor = null },
             )
-        }
-
-        // Bubble for the current letter, dragged out from the strip and springing back.
-        if (scrubLetter != null && scrubBubbleShape != ScrubBubbleShape.HIDDEN) {
-            val bubbleHalfPx = with(density) { (SCRUB_BUBBLE_SIZE / 2).toPx() }
-            val insetPx = with(density) { scrubBubbleInsetDp(scrubReach).dp.toPx() }
-            Surface(
-                color = Color.Black.copy(alpha = 0.6f),
-                shape = when (scrubBubbleShape) {
-                    ScrubBubbleShape.CIRCLE -> CircleShape
-                    ScrubBubbleShape.SQUARE -> RectangleShape
-                    else -> RoundedCornerShape(22.dp)
-                },
-                modifier = Modifier
-                    .align(if (activeSide == EdgeSide.LEFT) Alignment.TopStart else Alignment.TopEnd)
-                    .offset {
-                        val x = insetPx + pullPx()
-                        IntOffset(
-                            x = if (activeSide == EdgeSide.LEFT) x.roundToInt() else -x.roundToInt(),
-                            y = ((scrubY() ?: 0f) - bubbleHalfPx).roundToInt(),
-                        )
-                    }
-                    .size(SCRUB_BUBBLE_SIZE),
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        scrubLetter.toString(),
-                        color = Color.White,
-                        fontSize = 30.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-            }
         }
       }
     }
