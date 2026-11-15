@@ -297,6 +297,14 @@ fun buildAppListModel(
      */
     favoriteKeys: List<String> = emptyList(),
     /**
+     * How many times each app has been opened, for the order inside a folder.
+     *
+     * Kept apart from [launchCounts], which orders the alphabet only while that setting asks for
+     * it: a folder is a shortlist, and the members someone actually opens are the ones worth
+     * having at the top of it whatever the list as a whole is sorted by.
+     */
+    folderLaunchCounts: Map<String, Int> = emptyMap(),
+    /**
      * The folders a favorite token may name, so a folder starred by hand can stand in the list.
      *
      * Passed whether or not folders are filed among the apps: a folder someone starred is a
@@ -321,6 +329,12 @@ fun buildAppListModel(
     val visibleByKey = visible.associateBy { it.key }
     val rows = mutableListOf<AppListRow>()
 
+    /** Most used first, alphabetical after that, for what is inside a folder. */
+    fun byUsageThenName(apps: List<AppInfo>): List<AppInfo> = apps.sortedWith(
+        compareByDescending<AppInfo> { folderLaunchCounts[it.key] ?: 0 }
+            .thenBy { displayName(it).lowercase() }
+    )
+
     // First, under a star, in the order they were put in: that is the order the home screen
     // keeps them in, and the point of having them here is finding one without knowing what it
     // is called. Not given a letter — a shortlist is not part of the alphabet, and everything
@@ -334,7 +348,7 @@ fun buildAppListModel(
                 // A folder whose apps are all hidden or gone has nothing to open, and is left
                 // out the same way it is when filed under its letter.
                 foldersByFavoriteId[folderId]?.let { folder ->
-                    val members = folder.apps.mapNotNull { visibleByKey[it] }
+                    val members = byUsageThenName(folder.apps.mapNotNull { visibleByKey[it] })
                     if (members.isEmpty()) {
                         null
                     } else {
@@ -356,7 +370,7 @@ fun buildAppListModel(
             favorites.forEach { row ->
                 rows += row
                 if (row is AppListRow.FolderRow && row.expanded) {
-                    row.members.sortedBy { displayName(it).lowercase() }
+                    row.members
                         .forEach { rows += AppListRow.Entry(it, section = favoritesFolderSection(row.folder.id)) }
                 }
             }
@@ -370,7 +384,7 @@ fun buildAppListModel(
     // Filed by the name they were given, the way a renamed app is. One whose apps are all
     // hidden or gone has nothing to open, so it is left out.
     val foldersByLetter = folders.mapNotNull { folder ->
-        val members = folder.apps.mapNotNull { visibleByKey[it] }
+        val members = byUsageThenName(folder.apps.mapNotNull { visibleByKey[it] })
         if (members.isEmpty()) null else AppListRow.FolderRow(folder, members, folder.id in expandedFolders)
     }.groupBy { filingLetter(it.folder.name, renamed = true, japanese) { null } }
 
@@ -385,7 +399,7 @@ fun buildAppListModel(
         foldersByLetter[letter].orEmpty().sortedBy { it.folder.name.lowercase() }.forEach { row ->
             rows += row
             if (row.expanded) {
-                row.members.sortedBy { displayName(it).lowercase() }
+                row.members
                     .forEach { rows += AppListRow.Entry(it, section = folderSection(row.folder.id)) }
             }
         }

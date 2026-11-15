@@ -253,6 +253,8 @@ fun HomeScreen(
     onRemoveFolderFromHome: ((Folder) -> Unit)? = null,
     onMoveToFolder: (AppInfo) -> Unit,
     appsByKey: Map<String, AppInfo>,
+    /** How many times each app has been opened, which orders what is inside a folder. */
+    launchCounts: Map<String, Int>,
     onReorderHome: (newFavoriteKeys: List<String>, newWidgetPosition: Int) -> Unit,
     onCommitPadding: (PaddingSlot, Int) -> Unit,
     onFavoritesBoundsChanged: (topPx: Float, bottomPx: Float) -> Unit,
@@ -1061,6 +1063,7 @@ fun HomeScreen(
                             shortcutSwipe = shortcutSwipe,
                             folder = item.folder,
                             members = item.folder.apps.mapNotNull { appsByKey[it] },
+                            launchCounts = launchCounts,
                             expanded = item.folder.id in expandedFolders,
                             editMode = editMode,
                             dragHandle = dragHandle,
@@ -1543,6 +1546,8 @@ private fun FolderRow(
     shortcutSwipe: ShortcutSwipe,
     folder: Folder,
     members: List<AppInfo>,
+    /** How many times each of [members] has been opened: most used first, then by name. */
+    launchCounts: Map<String, Int>,
     expanded: Boolean,
     editMode: Boolean,
     /** Non-null in edit mode: the gesture that reorders, attached to this row's grab handle. */
@@ -1584,6 +1589,15 @@ private fun FolderRow(
     val memberTouch = remember { mutableStateOf(Offset.Zero) }
     var memberShortcutFor by remember { mutableStateOf<String?>(null) }
 
+    // Most used first, alphabetical after that. A folder is a shortlist, and the apps someone
+    // actually opens are the ones worth having at the top of it — the order someone dragged
+    // the members into is for the folder screen that manages them, not for reading the folder.
+    // Not remembered: the tie-break reads the name as it is now, so a rename reorders it.
+    val orderedMembers = members.sortedWith(
+        compareByDescending<AppInfo> { launchCounts[it.key] ?: 0 }
+            .thenBy { displayName(it).lowercase() }
+    )
+
     Column {
         Box(Modifier.fillMaxWidth()) {
             Row(
@@ -1623,7 +1637,7 @@ private fun FolderRow(
                     showLabel = showLabels,
                     iconSide = iconSide,
                     iconWidth = iconSizeDp.dp,
-                    icon = { FolderIcon(members, iconSizeDp, contentColor, folder.icon) },
+                    icon = { FolderIcon(orderedMembers, iconSizeDp, contentColor, folder.icon) },
                 ) { labelModifier ->
                     Text(
                         folder.name,
@@ -1714,7 +1728,7 @@ private fun FolderRow(
                             },
                     )
                 }
-                members.forEach { member ->
+                orderedMembers.forEach { member ->
                     Box {
                     Row(
                         modifier = Modifier

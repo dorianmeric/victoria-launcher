@@ -258,6 +258,9 @@ fun HomeRoute(
                 // Every folder, whatever the filing setting says: a starred folder is a favorite
                 // whether or not folders are also filed among the apps.
                 favoriteFolders = folders,
+                // Unconditional, unlike the list's own sort: inside a folder the most used apps
+                // are what someone is looking for.
+                folderLaunchCounts = launchCounts,
             )
         }
     }
@@ -756,6 +759,7 @@ fun HomeRoute(
                     scope.launch { app.prefs.removeAppFromFolder(folder.id, appInfo.key) }
                 },
                 appsByKey = appsByKey,
+                launchCounts = launchCounts,
                 onMoveToFolder = { folderPickerFor = it },
                 onReorderHome = { newFavKeys, newWidgetPos ->
                     scope.launch {
