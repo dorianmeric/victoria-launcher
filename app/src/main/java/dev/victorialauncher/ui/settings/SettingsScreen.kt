@@ -93,6 +93,7 @@ import dev.victorialauncher.data.ScrubBubbleShape
 import dev.victorialauncher.data.EDGE_ZONE_INSET_RANGE
 import dev.victorialauncher.data.HOLD_SCROLL_RANGE
 import dev.victorialauncher.data.RECENT_SECTION_RANGE
+import dev.victorialauncher.data.ROW_SPACING_RANGE
 import dev.victorialauncher.data.SECTION_TOP_RANGE
 import dev.victorialauncher.data.FREQUENT_RANGE
 import dev.victorialauncher.data.FavoritesSource
@@ -184,6 +185,8 @@ fun SettingsScreen(
     onSetRecentSection: (Boolean) -> Unit,
     recentSectionCount: Int,
     onSetRecentSectionCount: (Int) -> Unit,
+    appListRowSpacingDp: Int,
+    onSetAppListRowSpacingDp: (Int) -> Unit,
     favoritesAtTop: Boolean,
     onSetFavoritesAtTop: (Boolean) -> Unit,
     edgeZoneInsetDp: Int,
@@ -695,6 +698,19 @@ fun SettingsScreen(
                 range = RECENT_SECTION_RANGE.first.toFloat()..RECENT_SECTION_RANGE.last.toFloat(),
                 valueLabel = recentSectionCount.toString(),
                 onValueChange = { onSetRecentSectionCount(it.toInt()) },
+            )
+        },
+        SettingsEntry(
+            SettingsSection.APP_LIST, stringResource(R.string.settings_row_spacing),
+            "row height spacing density compact app list",
+        ) {
+            SliderRow(
+                label = stringResource(R.string.settings_row_spacing),
+                value = appListRowSpacingDp.toFloat(),
+                range = ROW_SPACING_RANGE.first.toFloat()..ROW_SPACING_RANGE.last.toFloat(),
+                valueLabel = "${appListRowSpacingDp}dp",
+                detail = stringResource(R.string.settings_row_spacing_detail),
+                onValueChange = { onSetAppListRowSpacingDp(it.toInt()) },
             )
         },
         SettingsEntry(SettingsSection.APP_LIST, stringResource(R.string.settings_favorites_at_top), "favorites star top of list") {

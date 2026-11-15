@@ -110,6 +110,18 @@ const val DEFAULT_AZ_WIDTH_PERCENT = 50
 
 /** Enough to be a list of what is new, short of being a second app list. */
 val RECENT_SECTION_RANGE = 3..15
+
+/**
+ * How much room a row of the app list leaves above and below its own icon and name.
+ *
+ * Six is the list as it has always looked. Under that the rows close up until the content
+ * itself is what sets their height, which is the point: someone who wants more of the
+ * alphabet on screen at once can have it without shrinking the icons.
+ */
+val ROW_SPACING_RANGE = 0..12
+
+/** What [ROW_SPACING_RANGE] starts at: the spacing this list has always had. */
+const val DEFAULT_ROW_SPACING_DP = 6
 enum class AppFont { SYSTEM, SANS_SERIF, SERIF, MONOSPACE, CUSTOM }
 
 /** AUTO picks light or dark text from the wallpaper's own colors. */
@@ -241,6 +253,7 @@ class Prefs(private val context: Context) {
         val FOLDERS_IN_APP_LIST = booleanPreferencesKey("folders_in_app_list")
         val RECENT_SECTION = booleanPreferencesKey("recent_section")
         val RECENT_SECTION_COUNT = intPreferencesKey("recent_section_count")
+        val APP_LIST_ROW_SPACING_DP = intPreferencesKey("app_list_row_spacing_dp")
         val FAVORITES_AT_TOP = booleanPreferencesKey("favorites_at_top")
         val SHOW_APP_ICONS = booleanPreferencesKey("show_app_icons")
         val SHOW_FAVORITE_ICONS = booleanPreferencesKey("show_favorite_icons")
@@ -802,6 +815,16 @@ class Prefs(private val context: Context) {
     /** How many of them. */
     val recentSectionCount: Flow<Int> =
         data.map { (it[Keys.RECENT_SECTION_COUNT] ?: 5).coerceIn(RECENT_SECTION_RANGE) }
+            .distinctUntilChanged()
+
+    /**
+     * How much room each app list row puts above and below its icon and name.
+     *
+     * Applies to the list and its search results alike, since a result is drawn as the same
+     * row, and only to the vertical: the list is already inset at its sides by the A-Z strip.
+     */
+    val appListRowSpacingDp: Flow<Int> =
+        data.map { (it[Keys.APP_LIST_ROW_SPACING_DP] ?: DEFAULT_ROW_SPACING_DP).coerceIn(ROW_SPACING_RANGE) }
             .distinctUntilChanged()
 
     /**
@@ -1451,6 +1474,10 @@ class Prefs(private val context: Context) {
 
     suspend fun setRecentSectionCount(v: Int) {
         context.dataStore.edit { it[Keys.RECENT_SECTION_COUNT] = v.coerceIn(RECENT_SECTION_RANGE) }
+    }
+
+    suspend fun setAppListRowSpacingDp(v: Int) {
+        context.dataStore.edit { it[Keys.APP_LIST_ROW_SPACING_DP] = v.coerceIn(ROW_SPACING_RANGE) }
     }
 
     suspend fun setFavoritesAtTop(v: Boolean) {

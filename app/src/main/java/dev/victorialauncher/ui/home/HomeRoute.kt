@@ -872,6 +872,7 @@ fun HomeRoute(
                 scrub = scrub,
                 iconSizeDp = settings.iconSizeDp,
                 labelSizeSp = settings.labelSizeSp,
+                rowSpacingDp = settings.appListRowSpacingDp,
                 band = band,
                 viewportHeightPx = viewportHeightPx,
                 viewportWidthPx = viewportWidthPx,
@@ -1181,6 +1182,8 @@ data class HomeSettings(
     val foldersInAppList: Boolean,
     val recentSection: Boolean,
     val recentSectionCount: Int,
+    /** Room above and below each app list row, in dp. */
+    val appListRowSpacingDp: Int,
     /** Whether the app list opens with the favorites under a star. */
     val favoritesAtTop: Boolean,
     val edgeZoneInsetDp: Int,

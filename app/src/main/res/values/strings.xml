@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Victoria Launcher</string>
+    <string name="app_name">Victoria Launcher-mine</string>
     <string name="accessibility_description">Lets the swipe-down gesture open the notification shade. Victoria Launcher does not read or act on screen content.</string>
 
     <!-- Shared actions -->
@@ -208,6 +208,8 @@
     <string name="settings_recent_section">Recently installed section</string>
     <string name="settings_recent_section_detail">Ends the app list with whatever arrived most recently</string>
     <string name="settings_recent_section_count">How many recent apps</string>
+    <string name="settings_row_spacing">Row spacing</string>
+    <string name="settings_row_spacing_detail">Room above and below each app in the list. Less fits more of the alphabet on screen at once</string>
     <string name="settings_favorites_at_top">Favorites at the top</string>
     <string name="settings_favorites_at_top_detail">Starts the app list with a star and the apps you have starred, in your own order. They stay under their own letters too</string>
     <string name="settings_compact_tap">Tap only the icon and name</string>

@@ -49,6 +49,7 @@ import dev.victorialauncher.data.EntryKind
 import dev.victorialauncher.data.PrivateSpace
 import dev.victorialauncher.data.AzStripVisibility
 import dev.victorialauncher.data.DEFAULT_AZ_WIDTH_PERCENT
+import dev.victorialauncher.data.DEFAULT_ROW_SPACING_DP
 import dev.victorialauncher.data.EdgeSide
 import dev.victorialauncher.data.RippleParams
 import dev.victorialauncher.data.ScrubStyle
@@ -300,6 +301,7 @@ fun VictoriaNavHost(
     val foldersInAppList by app.prefs.foldersInAppList.collectAsState(initial = false)
     val recentSection by app.prefs.recentSection.collectAsState(initial = false)
     val recentSectionCount by app.prefs.recentSectionCount.collectAsState(initial = 5)
+    val appListRowSpacingDp by app.prefs.appListRowSpacingDp.collectAsState(initial = DEFAULT_ROW_SPACING_DP)
     val favoritesAtTop by app.prefs.favoritesAtTop.collectAsState(initial = false)
     val edgeZoneInsetDp by app.prefs.edgeZoneInsetDp.collectAsState(initial = 0)
     val edgeZoneInsetAuto by app.prefs.edgeZoneInsetAuto.collectAsState(initial = true)
@@ -571,6 +573,7 @@ fun VictoriaNavHost(
         foldersInAppList = foldersInAppList,
         recentSection = recentSection,
         recentSectionCount = recentSectionCount,
+        appListRowSpacingDp = appListRowSpacingDp,
         favoritesAtTop = favoritesAtTop,
         edgeZoneInsetDp = edgeZoneInsetDp,
         edgeZoneInsetAuto = edgeZoneInsetAuto,
@@ -783,6 +786,8 @@ fun VictoriaNavHost(
                 onSetRecentSection = { scope.launch { app.prefs.setRecentSection(it) } },
                 recentSectionCount = recentSectionCount,
                 onSetRecentSectionCount = { scope.launch { app.prefs.setRecentSectionCount(it) } },
+                appListRowSpacingDp = appListRowSpacingDp,
+                onSetAppListRowSpacingDp = { scope.launch { app.prefs.setAppListRowSpacingDp(it) } },
                 favoritesAtTop = favoritesAtTop,
                 onSetFavoritesAtTop = { scope.launch { app.prefs.setFavoritesAtTop(it) } },
                 onSetTextShadow = { scope.launch { app.prefs.setTextShadow(it) } },

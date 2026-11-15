@@ -26,11 +26,13 @@ android {
     }
 
     defaultConfig {
-        applicationId = "dev.victorialauncher"
+        // Installs beside the upstream launcher rather than replacing it, and keeps this
+        // fork's own home role, settings and shortcuts out of the original's.
+        applicationId = "dev.victorialauncher.mine"
         minSdk = 26
         targetSdk = 35
-        versionCode = 135
-        versionName = "0.94.5"
+        versionCode = 555
+        versionName = "1.94.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

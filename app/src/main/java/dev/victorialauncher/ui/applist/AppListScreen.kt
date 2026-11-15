@@ -162,6 +162,16 @@ private val IDLE_BOTTOM_PADDING = 32.dp
 /** Smallest comfortable row, so a tap beside a small icon still lands on its app. */
 private val MIN_ROW_HEIGHT = 48.dp
 
+/**
+ * What an app row is worth with no spacing at all: enough for the content's own tap target,
+ * so tightening the spacing shortens the rows rather than only closing the gaps between them.
+ * The default spacing of 6dp puts [MIN_ROW_HEIGHT] back on top.
+ */
+private val MIN_ROW_CONTENT_HEIGHT = 36.dp
+
+/** The room a section header keeps above it at zero spacing, so letters never touch. */
+private val MIN_HEADER_TOP_PADDING = 6.dp
+
 /** How far rows are held off an edge the strip can appear on.
  *
  * A floor rather than the whole answer: what actually has to be cleared is the live touch
@@ -219,6 +229,8 @@ fun AppListScreen(
     scrub: ScrubState,
     iconSizeDp: Int,
     labelSizeSp: Int,
+    /** Room above and below each row's icon and name, in dp; see the row spacing setting. */
+    rowSpacingDp: Int,
     band: ScrubBand,
     viewportHeightPx: Int,
     /** Width of the screen, so the A-Z strip's own width can be measured against it. */
@@ -297,6 +309,11 @@ fun AppListScreen(
     // Appended at the point of showing rather than stored in the label, so a rename still
     // wins and turning this off needs no re-reading of every app.
     val workSuffix = stringResource(R.string.app_work_suffix)
+
+    // Read once here so every row draws against the same spacing, and the section headers
+    // close up with the rows they name rather than staying as far apart as they always were.
+    val rowSpacing = rowSpacingDp.dp
+
     fun displayName(app: AppInfo): String {
         val base = nameOverrides[app.key] ?: app.label
         return if (markWorkApps && app.work) base + workSuffix else base
@@ -1256,7 +1273,7 @@ fun AppListScreen(
                 ) {
                 when (row) {
                     is AppListRow.Header ->
-                        SectionHeader(row.text, labelSizeSp, contentColor, alignment, row.starred)
+                        SectionHeader(row.text, labelSizeSp, contentColor, alignment, rowSpacing, row.starred)
                     is AppListRow.FolderRow -> FolderListRow(
                         row = row,
                         contentColor = contentColor,
@@ -1264,6 +1281,7 @@ fun AppListScreen(
                         iconSide = iconSide,
                         iconSizeDp = iconSizeDp,
                         labelSizeSp = labelSizeSp,
+                        rowSpacing = rowSpacing,
                         onHome = favoriteKeys.contains(folderToken(row.folder.id)),
                         menuExpanded = menuForKey == rowKey(row),
                         menuOffset = menuOffset,
@@ -1291,6 +1309,7 @@ fun AppListScreen(
                         label = displayName(row.app),
                         iconSizeDp = iconSizeDp,
                         labelSizeSp = labelSizeSp,
+                        rowSpacing = rowSpacing,
                         isFavorite = favoriteKeys.contains(row.app.key),
                         menuExpanded = menuForKey == rowKey(row),
                         menuOffset = menuOffset,
@@ -1464,6 +1483,8 @@ private fun SectionHeader(
     labelSizeSp: Int,
     contentColor: Color,
     alignment: HomeAlignment,
+    /** Room above and below the row's icon and name, which sets its height. */
+    rowSpacing: Dp,
     /** Whether this is the favorites at the top, which is marked with a star. */
     starred: Boolean = false,
 ) {
@@ -1477,7 +1498,12 @@ private fun SectionHeader(
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(top = 18.dp, bottom = 6.dp),
+            // Twice the row spacing above and once below, so a letter keeps its distance from
+            // the alphabet under it while the list as a whole still closes up together.
+            modifier = Modifier.padding(
+                top = MIN_HEADER_TOP_PADDING + rowSpacing * 2,
+                bottom = rowSpacing,
+            ),
         ) {
             if (starred) {
                 Icon(
@@ -1510,6 +1536,8 @@ private fun AppRow(
     label: String,
     iconSizeDp: Int,
     labelSizeSp: Int,
+    /** Room above and below this row's icon and name, which sets its height. */
+    rowSpacing: Dp,
     isFavorite: Boolean,
     menuExpanded: Boolean,
     menuOffset: DpOffset,
@@ -1562,9 +1590,11 @@ private fun AppRow(
                     },
                 )
                 // The whole row is the target, not the label: at small icon sizes the strip
-                // left to tap was thinner than a fingertip.
-                .heightIn(min = MIN_ROW_HEIGHT)
-                .padding(horizontal = 8.dp, vertical = 6.dp),
+                // left to tap was thinner than a fingertip. The spacing setting moves this
+                // floor with its padding, so tightening it shortens the row rather than only
+                // closing the gap to the next one.
+                .heightIn(min = MIN_ROW_CONTENT_HEIGHT + rowSpacing * 2)
+                .padding(horizontal = 8.dp, vertical = rowSpacing),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = when (alignment) {
                 HomeAlignment.LEFT -> Arrangement.Start
@@ -1734,6 +1764,8 @@ private fun FolderListRow(
     iconSide: IconSide,
     iconSizeDp: Int,
     labelSizeSp: Int,
+    /** Room above and below this row's icon and name, which sets its height. */
+    rowSpacing: Dp,
     onHome: Boolean,
     menuExpanded: Boolean,
     menuOffset: DpOffset,
@@ -1770,8 +1802,8 @@ private fun FolderListRow(
                         )
                     },
                 )
-                .heightIn(min = MIN_ROW_HEIGHT)
-                .padding(horizontal = 8.dp, vertical = 6.dp),
+                .heightIn(min = MIN_ROW_CONTENT_HEIGHT + rowSpacing * 2)
+                .padding(horizontal = 8.dp, vertical = rowSpacing),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = when (alignment) {
                 HomeAlignment.LEFT -> Arrangement.Start
