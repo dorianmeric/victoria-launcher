@@ -108,9 +108,18 @@ private const val GESTURE_EXCLUSION_CAP_DP = 200
 /** How long a launch is given to take us off screen before the overlay closes itself. */
 private const val LAUNCH_CLOSE_TIMEOUT_MS = 2000L
 
-/** Long enough to read as a settle, short enough not to stand between you and the icons. */
 /** Room each letter wants on the strip before it stops being something anyone can hit. */
 private val MIN_LETTER_HEIGHT = 15.dp
+
+/**
+ * Room a letter is allowed before the alphabet stops reading as one strip.
+ *
+ * The band follows the favorites, and the favorites are as tall as there are favorites — so a
+ * screenful of them, or a range dragged out by hand, spread 26 letters over the whole screen
+ * and put each one most of a thumb away from the next. Past this the band keeps its middle and
+ * stops growing instead.
+ */
+private val MAX_LETTER_HEIGHT = 24.dp
 
 private const val HOME_FADE_MS = 220
 
@@ -185,6 +194,10 @@ fun HomeRoute(
     }
     // The star at the top of the list. Read here for the same reason, and only while the
     // setting asks for it: the section is left out of the model entirely when it is off.
+    //
+    // The apps under it are the ones starred by hand, whatever the home screen's favorites are
+    // set to draw. "Most used" is a list this screen computes, not a list anyone keeps, and the
+    // point of the star here is to reach the shortlist someone built.
     val favoritesSectionLabel = stringResource(R.string.applist_favorites_section)
         .takeIf { settings.favoritesAtTop }
     // Asked once: whether anything on this phone handles a web search at all.
@@ -242,6 +255,9 @@ fun HomeRoute(
                 expandedFolders = listOpenFolders,
                 favoritesSection = favoritesSectionLabel,
                 favoriteKeys = favoriteKeys,
+                // Every folder, whatever the filing setting says: a starred folder is a favorite
+                // whether or not folders are also filed among the apps.
+                favoriteFolders = folders,
             )
         }
     }
@@ -288,8 +304,11 @@ fun HomeRoute(
     var favBand by remember { mutableStateOf<ScrubBand?>(null) }
     // Enough height for every letter to be worth aiming at. Counted per letter rather than set
     // as one number, since an alphabet with accents in it has more letters to find room for.
-    val minBandHeightPx = with(LocalDensity.current) {
-        (listModel.letters.size * MIN_LETTER_HEIGHT.toPx())
+    // And no more height than the letters can be spread over and still be one strip — see
+    // [MAX_LETTER_HEIGHT].
+    val (minBandHeightPx, maxBandHeightPx) = with(LocalDensity.current) {
+        (listModel.letters.size * MIN_LETTER_HEIGHT.toPx()) to
+            (listModel.letters.size * MAX_LETTER_HEIGHT.toPx())
     }
     var homeEditMode by remember { mutableStateOf(false) }
     var folderPickerFor by remember { mutableStateOf<AppInfo?>(null) }
@@ -315,18 +334,37 @@ fun HomeRoute(
     val homeDim =
         if (homeEditMode) maxOf(settings.dimHomeAlpha, settings.dimWallpaperAlpha) else settings.dimHomeAlpha
     var liveBand by remember { mutableStateOf<ScrubBand?>(null) }
+
+    /**
+     * Keeps a range inside the room the letters are allowed to spread over.
+     *
+     * A band dragged out by hand, or stored from a screen with more on it, was the other way
+     * the strip ended up sparse: the height is what sets the distance between two letters, so
+     * it is capped however it arrived. The top moves with it rather than the band being sliced.
+     */
+    fun clampBand(range: ScrubBand): ScrubBand {
+        val viewport = viewportHeightPx.toFloat()
+        val height = range.heightPx.coerceAtMost(maxBandHeightPx).coerceIn(0f, viewport)
+        val top = range.topPx.coerceIn(0f, (viewport - height).coerceAtLeast(0f))
+        return ScrubBand(topPx = top, heightPx = height)
+    }
+
     // Clamped on the way back in as well as on the way out: a range stored from a bad
     // measurement would otherwise put the strip off screen for good, with no gesture left to
     // reach it and fix it.
     val storedBand = scrubBandFractions
         ?.takeIf { (top, height) -> top.isFinite() && height.isFinite() && height > 0f }
         ?.let { (top, height) ->
-            val bandHeight = (viewportHeightPx * height).coerceIn(0f, viewportHeightPx.toFloat())
-            val bandTop = (viewportHeightPx * top)
-                .coerceIn(0f, (viewportHeightPx - bandHeight).coerceAtLeast(0f))
-            ScrubBand(topPx = bandTop, heightPx = bandHeight)
+            ScrubBand(
+                topPx = viewportHeightPx * top,
+                heightPx = viewportHeightPx * height,
+            )
         }
-    val band = liveBand ?: storedBand ?: favBand ?: ScrubBand.fallbackFor(viewportHeightPx)
+    // Whichever way a range arrived — measured from the favorites, set by hand and stored, being
+    // dragged right now, or the fallback before anything has been measured — it goes through the
+    // clamp. The height is what sets the distance between two letters, so this is the one place
+    // that decides how far apart the alphabet may be.
+    val band = clampBand(liveBand ?: storedBand ?: favBand ?: ScrubBand.fallbackFor(viewportHeightPx))
 
     /** Locking is a strip gesture now, so the toast that explains it lives with the strip. */
     fun lockOrExplain() {
@@ -750,6 +788,7 @@ fun HomeRoute(
                         bottomPx = bottom,
                         viewportPx = viewportHeightPx.toFloat(),
                         minHeightPx = minBandHeightPx,
+                        maxHeightPx = maxBandHeightPx,
                     )
                 },
                 nowPlayingHasContent = nowPlayingHasContent,
@@ -1060,7 +1099,7 @@ fun HomeRoute(
                 side = scrub.side,
                 viewportHeightPx = viewportHeightPx,
                 letters = listModel.letters,
-                onBandChange = { liveBand = it },
+                onBandChange = { liveBand = clampBand(it) },
                 // Stays open rather than exiting: dropping the stored range hands the
                 // strip back to the favorites, and the point of a reset is watching it land
                 // there. Done then leaves without storing anything, since there is nothing

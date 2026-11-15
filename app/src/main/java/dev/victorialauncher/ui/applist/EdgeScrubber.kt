@@ -5,7 +5,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -248,19 +252,30 @@ fun EdgeScrubber(
             ) {
                 // Two glyphs, one showing at a time: the mark's white disk needs a black letter
                 // on it, and which one is on the disk changes with the finger, not composition.
-                Text(
-                    text = c.toString(),
-                    fontSize = 13.sp,
-                    color = Color.White,
-                    modifier = Modifier.graphicsLayer { alpha = if (marked()) 0f else 1f },
-                )
-                Text(
-                    text = c.toString(),
-                    fontSize = 13.sp,
-                    color = Color.Black,
-                    modifier = Modifier.graphicsLayer { alpha = if (marked()) 1f else 0f },
-                )
+                StripGlyph(c, Color.White) { if (marked()) 0f else 1f }
+                StripGlyph(c, Color.Black) { if (marked()) 1f else 0f }
             }
         }
+    }
+}
+
+/**
+ * One entry of the strip: a letter, or the star that stands for the favorites heading.
+ *
+ * [alphaNow] is read in the draw phase like everything else here, so the glyph that shows on the
+ * white mark swaps without recomposing the strip.
+ */
+@Composable
+private fun StripGlyph(letter: Char, color: Color, alphaNow: () -> Float) {
+    val modifier = Modifier.graphicsLayer { alpha = alphaNow() }
+    if (letter == FAVORITES_HEADING) {
+        Icon(
+            Icons.Filled.Star,
+            contentDescription = null,
+            tint = color,
+            modifier = modifier.size(14.dp),
+        )
+    } else {
+        Text(text = letter.toString(), fontSize = 13.sp, color = color, modifier = modifier)
     }
 }

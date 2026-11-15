@@ -81,7 +81,7 @@ enum class QuickLaunchSlot { LEFT, RIGHT }
 enum class FavoritesSource { MANUAL, FREQUENT }
 
 /** Enough to be a shortlist, not so many that the section becomes the app list again. */
-val FREQUENT_RANGE = 3..12
+val FREQUENT_RANGE = 1..30
 
 /**
  * How far down the viewport a scrubbed letter may be parked.

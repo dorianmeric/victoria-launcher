@@ -5,6 +5,7 @@ import androidx.compose.runtime.Immutable
 import dev.victorialauncher.data.AppInfo
 import dev.victorialauncher.data.EntryKind
 import dev.victorialauncher.data.Folder
+import dev.victorialauncher.data.folderIdFromToken
 import android.icu.text.Transliterator
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -15,8 +16,35 @@ internal const val PRIVATE_SECTION = "private"
 internal const val RECENT_SECTION = "recent"
 internal const val FAVORITES_SECTION = "favorites"
 
+/**
+ * The strip's mark for the favorites heading, which sits above '#'.
+ *
+ * A heading is a place in the list like any other, and the favorites are the one place whose
+ * marking is not a letter — so it takes a letter's place on the strip rather than being
+ * reachable only by scrolling back to the top.
+ */
+internal const val FAVORITES_HEADING: Char = '\u2605'
+
+private const val FOLDER_SECTION_PREFIX = "folder:"
+
 /** The section an open folder's apps are listed in, one per folder. */
-internal fun folderSection(id: String) = "folder:$id"
+internal fun folderSection(id: String) = "$FOLDER_SECTION_PREFIX$id"
+
+/**
+ * The same, for a folder's apps listed with the favorites at the top.
+ *
+ * Named apart rather than shared: a folder can be a favorite and still be filed under its own
+ * letter, and the two copies of its apps are two rows — a list keyed by the app alone would
+ * then hold one key twice, which Compose refuses outright, taking the screen down with it.
+ */
+internal fun favoritesFolderSection(id: String) = "$FOLDER_SECTION_PREFIX$id@$FAVORITES_SECTION"
+
+/** The folder an entry is listed inside, or null when it is not inside one. */
+internal fun folderIdOf(section: String?): String? =
+    section
+        ?.takeIf { it.startsWith(FOLDER_SECTION_PREFIX) }
+        ?.removePrefix(FOLDER_SECTION_PREFIX)
+        ?.substringBefore('@')
 
 @Immutable
 sealed interface AppListRow {
@@ -37,11 +65,21 @@ sealed interface AppListRow {
      * screen down with it.
      */
     data class Entry(val app: AppInfo, val section: String? = null) : AppListRow {
-        val inFolder: Boolean get() = section?.startsWith("folder:") == true
+        val inFolder: Boolean get() = folderIdOf(section) != null
     }
 
-    /** A folder filed under its name, its apps listed right below it while [expanded]. */
-    data class FolderRow(val folder: Folder, val members: List<AppInfo>, val expanded: Boolean) : AppListRow
+    /**
+     * A folder filed under its name, its apps listed right below it while [expanded].
+     *
+     * [section] names the part of the list it is in when the same folder can be in two — the
+     * favorites at the top, and its own letter below.
+     */
+    data class FolderRow(
+        val folder: Folder,
+        val members: List<AppInfo>,
+        val expanded: Boolean,
+        val section: String? = null,
+    ) : AppListRow
 }
 
 /**
@@ -258,6 +296,13 @@ fun buildAppListModel(
      * an app since uninstalled — resolve to nothing.
      */
     favoriteKeys: List<String> = emptyList(),
+    /**
+     * The folders a favorite token may name, so a folder starred by hand can stand in the list.
+     *
+     * Passed whether or not folders are filed among the apps: a folder someone starred is a
+     * favorite either way, and [folders] is what says where a folder is filed.
+     */
+    favoriteFolders: List<Folder> = emptyList(),
     /** Whether names that are not A-Z file under kana rows and kanji, as a Japanese phone sorts. */
     japanese: Boolean = false,
     /** Folders to file among the apps, or none to keep them on the home screen only. */
@@ -279,12 +324,42 @@ fun buildAppListModel(
     // First, under a star, in the order they were put in: that is the order the home screen
     // keeps them in, and the point of having them here is finding one without knowing what it
     // is called. Not given a letter — a shortlist is not part of the alphabet, and everything
-    // in it is also under its own letter below.
+    // in it is also under its own letter below. Its place on the strip is the star instead.
+    var favoritesHeaderIndex: Int? = null
     if (favoritesSection != null) {
-        val favorites = favoriteKeys.mapNotNull { visibleByKey[it] }.distinctBy { it.key }
+        val foldersByFavoriteId = favoriteFolders.associateBy { it.id }
+        val favorites = favoriteKeys.distinct().mapNotNull { token ->
+            val folderId = folderIdFromToken(token)
+            if (folderId != null) {
+                // A folder whose apps are all hidden or gone has nothing to open, and is left
+                // out the same way it is when filed under its letter.
+                foldersByFavoriteId[folderId]?.let { folder ->
+                    val members = folder.apps.mapNotNull { visibleByKey[it] }
+                    if (members.isEmpty()) {
+                        null
+                    } else {
+                        AppListRow.FolderRow(
+                            folder = folder,
+                            members = members,
+                            expanded = folder.id in expandedFolders,
+                            section = FAVORITES_SECTION,
+                        )
+                    }
+                }
+            } else {
+                visibleByKey[token]?.let { AppListRow.Entry(it, section = FAVORITES_SECTION) }
+            }
+        }
         if (favorites.isNotEmpty()) {
+            favoritesHeaderIndex = rows.size
             rows += AppListRow.Header(favoritesSection, starred = true)
-            favorites.forEach { rows += AppListRow.Entry(it, section = FAVORITES_SECTION) }
+            favorites.forEach { row ->
+                rows += row
+                if (row is AppListRow.FolderRow && row.expanded) {
+                    row.members.sortedBy { displayName(it).lowercase() }
+                        .forEach { rows += AppListRow.Entry(it, section = favoritesFolderSection(row.folder.id)) }
+                }
+            }
         }
     }
 
@@ -300,6 +375,9 @@ fun buildAppListModel(
     }.groupBy { filingLetter(it.folder.name, renamed = true, japanese) { null } }
 
     val letterIndex = mutableListOf<Pair<Char, Int>>()
+    // Above '#', so the shortlist is a place the strip can reach rather than one only scrolling
+    // back to the top can find.
+    favoritesHeaderIndex?.let { letterIndex += FAVORITES_HEADING to it }
     (byLetter.keys + foldersByLetter.keys).toSortedSet().forEach { letter ->
         letterIndex += letter to rows.size
         if (showHeaders) rows += AppListRow.Header(letter.toString())

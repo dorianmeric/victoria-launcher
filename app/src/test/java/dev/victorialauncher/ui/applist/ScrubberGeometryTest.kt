@@ -65,4 +65,35 @@ class ScrubberGeometryTest {
         assertTrue(band.topPx >= 0f)
         assertTrue(band.bottomPx <= 2000f)
     }
+
+    @Test
+    fun `a favorites block taller than the letters can spread over is shrunk to it`() {
+        // A screenful of favorites, which is how the strip ended up with its letters most of a
+        // thumb apart: 26 letters over the whole screen is not one strip.
+        val band = ScrubberGeometry.bandForFavorites(
+            topPx = 0f, bottomPx = 2000f, viewportPx = 2000f, minHeightPx = 400f, maxHeightPx = 600f,
+        )
+        assertEquals(600f, band.heightPx, 0.01f)
+        // Shrunk around its own middle, so it still sits where the favorites are.
+        assertEquals(1000f, band.topPx + band.heightPx / 2f, 0.01f)
+    }
+
+    @Test
+    fun `a span between the two bounds is left where it is`() {
+        val band = ScrubberGeometry.bandForFavorites(
+            topPx = 400f, bottomPx = 1000f, viewportPx = 2000f, minHeightPx = 400f, maxHeightPx = 900f,
+        )
+        assertEquals(400f, band.topPx, 0.01f)
+        assertEquals(600f, band.heightPx, 0.01f)
+    }
+
+    @Test
+    fun `a maximum below the minimum cannot invert the range`() {
+        val band = ScrubberGeometry.bandForFavorites(
+            topPx = 400f, bottomPx = 1000f, viewportPx = 2000f, minHeightPx = 600f, maxHeightPx = 100f,
+        )
+        assertEquals(600f, band.heightPx, 0.01f)
+        // Still around the favorites' own middle.
+        assertEquals(700f, band.topPx + band.heightPx / 2f, 0.01f)
+    }
 }

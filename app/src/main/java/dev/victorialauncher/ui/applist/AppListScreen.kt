@@ -159,11 +159,13 @@ private val IDLE_BOTTOM_PADDING = 32.dp
 private val MIN_ROW_HEIGHT = 48.dp
 
 /**
- * What an app row is worth with no spacing at all: enough for the content's own tap target,
- * so tightening the spacing shortens the rows rather than only closing the gaps between them.
- * The default spacing of 6dp puts [MIN_ROW_HEIGHT] back on top.
+ * Room a row keeps above and below its own content, on top of its share of the spacing setting.
+ *
+ * The favorites rows on the home screen keep the same 4dp: their items are a `Spacer` of the
+ * spacing setting apart, with this on either side of it. Sharing the number is what makes the
+ * gap between two list rows the gap between two favorites, at any icon size.
  */
-private val MIN_ROW_CONTENT_HEIGHT = 36.dp
+private val ROW_OWN_PADDING = 4.dp
 
 /** The room a section header keeps above it at zero spacing, so letters never touch. */
 private val MIN_HEADER_TOP_PADDING = 6.dp
@@ -1314,8 +1316,7 @@ fun AppListScreen(
                         onHide = { onHideApp(row.app, row.app.key !in hiddenApps) },
                         isHidden = row.app.key in hiddenApps,
                         onMoveToFolder = { onMoveToFolder(row.app) },
-                        onRemoveFromFolder = row.section?.removePrefix("folder:")
-                            ?.takeIf { row.inFolder }
+                        onRemoveFromFolder = folderIdOf(row.section)
                             ?.let { id -> folderById[id] }
                             ?.let { folder -> { onRemoveFromFolder(folder, row.app) } },
                     ) }
@@ -1441,11 +1442,11 @@ private fun SectionHeader(
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            // Twice the row spacing above and once below, so a letter keeps its distance from
-            // the alphabet under it while the list as a whole still closes up together.
+            // The gap the rest of the list uses, split around the header, plus its own breathing
+            // room above: a letter keeps its distance from the alphabet under it.
             modifier = Modifier.padding(
-                top = MIN_HEADER_TOP_PADDING + rowSpacing * 2,
-                bottom = rowSpacing,
+                top = MIN_HEADER_TOP_PADDING + rowSpacing,
+                bottom = rowSpacing / 2f,
             ),
         ) {
             if (starred) {
@@ -1532,12 +1533,9 @@ private fun AppRow(
                         )
                     },
                 )
-                // The whole row is the target, not the label: at small icon sizes the strip
-                // left to tap was thinner than a fingertip. The spacing setting moves this
-                // floor with its padding, so tightening it shortens the row rather than only
-                // closing the gap to the next one.
-                .heightIn(min = MIN_ROW_CONTENT_HEIGHT + rowSpacing * 2)
-                .padding(horizontal = 8.dp, vertical = rowSpacing),
+                // Half the spacing setting on each side, plus the row's own padding: two
+                // neighbouring rows leave exactly the room two favorites do.
+                .padding(horizontal = 8.dp, vertical = ROW_OWN_PADDING + rowSpacing / 2f),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = when (alignment) {
                 HomeAlignment.LEFT -> Arrangement.Start
@@ -1691,7 +1689,10 @@ private fun AppRow(
 
 private fun rowKey(row: AppListRow): String = when (row) {
     is AppListRow.Header -> "header:${row.text}"
-    is AppListRow.FolderRow -> "folderrow:${row.folder.id}"
+    // The section is part of it: a starred folder is listed at the top and again under its own
+    // letter, and the two rows are not the same row.
+    is AppListRow.FolderRow ->
+        row.section?.let { "$it:${row.folder.id}" } ?: "folderrow:${row.folder.id}"
     is AppListRow.Entry -> row.section?.let { "$it:${row.app.key}" } ?: row.app.key
 }
 
@@ -1745,8 +1746,8 @@ private fun FolderListRow(
                         )
                     },
                 )
-                .heightIn(min = MIN_ROW_CONTENT_HEIGHT + rowSpacing * 2)
-                .padding(horizontal = 8.dp, vertical = rowSpacing),
+                // Half on each side, plus the row's own padding, as every other row.
+                .padding(horizontal = 8.dp, vertical = ROW_OWN_PADDING + rowSpacing / 2f),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = when (alignment) {
                 HomeAlignment.LEFT -> Arrangement.Start

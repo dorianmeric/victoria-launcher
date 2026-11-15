@@ -26,26 +26,33 @@ object ScrubberGeometry {
      * The band the strip should take, given where the favorites are.
      *
      * Normally exactly their span — the strip sits beside what it belongs to. But the favorites
-     * are as tall as there are favorites, and one of them is one row: the whole alphabet then
-     * has a row's height to divide between its letters, which is a strip with nothing in it
-     * anyone could hit or read. Below a minimum it grows around its own middle instead, so it
-     * stays where the favorites are without being their size.
+     * are as tall as there are favorites, and that is no way to size an alphabet: one of them is
+     * one row, and the whole alphabet then has a row's height to divide between its letters,
+     * which is a strip with nothing in it anyone could hit or read; a screenful spreads the
+     * letters so far apart that the one under the finger is anyone's guess. Outside
+     * [minHeightPx]..[maxHeightPx] the band keeps its middle and takes one of those instead, so
+     * it stays where the favorites are without being their size.
      */
     fun bandForFavorites(
         topPx: Float,
         bottomPx: Float,
         viewportPx: Float,
         minHeightPx: Float,
+        maxHeightPx: Float = Float.MAX_VALUE,
     ): ScrubBand {
-        val height = (bottomPx - topPx).coerceAtLeast(0f)
-        if (viewportPx <= 0f) return ScrubBand(topPx, height)
+        val span = (bottomPx - topPx).coerceAtLeast(0f)
+        if (viewportPx <= 0f) return ScrubBand(topPx, span)
         // A measurement taken mid-move can run past the screen, and the letters past its
         // edge could then never be reached. Kept on screen the way a hand-set band is.
-        if (height >= minHeightPx) {
-            val fitted = height.coerceAtMost(viewportPx)
-            return ScrubBand(topPx.coerceIn(0f, viewportPx - fitted), fitted)
+        //
+        // Both bounds are coerced against a range that cannot invert: a maximum under the
+        // minimum would otherwise give coerceIn a bottom above its top, which throws.
+        val lowest = minHeightPx.coerceIn(0f, viewportPx)
+        val highest = maxHeightPx.coerceIn(lowest, viewportPx)
+        if (span in lowest..highest) {
+            return ScrubBand(topPx.coerceIn(0f, viewportPx - span), span)
         }
-        val wanted = minHeightPx.coerceAtMost(viewportPx)
+        val wanted = span.coerceIn(lowest, highest)
         val center = (topPx + bottomPx) / 2f
         val top = (center - wanted / 2f).coerceIn(0f, viewportPx - wanted)
         return ScrubBand(top, wanted)
