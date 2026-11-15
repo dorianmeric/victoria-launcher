@@ -102,7 +102,7 @@ val EDGE_ZONE_INSET_RANGE = 0..32
 val RECENT_SECTION_RANGE = 3..15
 
 /** How far the A-Z wave reaches toward the middle, as a percent of its full reach. */
-val SCRUB_REACH_RANGE = 30..100
+val SCRUB_REACH_RANGE = 0..100
 enum class AppFont { SYSTEM, SANS_SERIF, SERIF, MONOSPACE, CUSTOM }
 
 /** AUTO picks light or dark text from the wallpaper's own colors. */
