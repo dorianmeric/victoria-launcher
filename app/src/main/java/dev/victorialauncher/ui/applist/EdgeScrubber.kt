@@ -32,9 +32,6 @@ import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.math.roundToInt
 
-/** Letters sit this far in from the screen edge so they aren't crowding it. */
-private const val EDGE_INSET_DP = 28f
-
 /**
  * How far the bulge pushes the column away from the edge at its peak.
  *
@@ -61,9 +58,7 @@ fun scrubBellDp(reach: Float = 1f): Float = BELL_AMPLITUDE_DP * reach
 
 /** How far in from the screen edge the letters sit at rest. */
 fun scrubEdgeInsetDp(): Float = EDGE_INSET_DP
-
-fun scrubBubbleInsetDp(reach: Float = 1f): Float =
-    EDGE_INSET_DP + BELL_AMPLITUDE_DP * reach + LETTER_HALF_DP + 18f
+fun scrubBubbleInsetDp(reach: Float = 1f): Float = EDGE_INSET_DP + BELL_AMPLITUDE_DP * reach + LETTER_HALF_DP + 18f
 
 // ---- Ripple simulation -----------------------------------------------------------------------
 private const val SIM_DT = 1f / 240f
@@ -114,10 +109,6 @@ private class RippleString(private val n: Int) {
  * the finger lifts. Scaling the glyphs (what this used to do) just stretched them until
  * they looked pixelated.
  *
- * How far the bow reaches is a setting: a share of the screen's width, so the letter under a
- * finger travels out to [widthPercent] of the way across the screen. See [scrubReach], which
- * also places the bubble, so the letter that lights up is the letter the bubble names.
- *
  * [scrubY] and [pullPx] are read as lambdas inside a graphicsLayer so the whole strip
  * animates in the draw phase; recomposing 26 Text nodes per pointer move made this jitter.
  */
@@ -128,12 +119,6 @@ fun EdgeScrubber(
     pullPx: () -> Float,
     band: ScrubBand,
     side: EdgeSide,
-    /** How much of the screen's width the strip takes, in percent. */
-    widthPercent: Int,
-    /** Width of the screen it is on; 0 until it has been measured. */
-    viewportWidthPx: Float,
-    /** Half the letter bubble's width, or 0 where none is drawn. */
-    bubbleHalfPx: Float,
     modifier: Modifier = Modifier,
     style: ScrubStyle = ScrubStyle.BELL,
     ripple: RippleParams = RippleParams(),

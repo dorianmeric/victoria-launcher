@@ -285,7 +285,6 @@ fun HomeRoute(
     var cornerButtonBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
     val scrub = remember { ScrubState() }
     var viewportHeightPx by remember { mutableIntStateOf(0) }
-    var viewportWidthPx by remember { mutableIntStateOf(0) }
     var favBand by remember { mutableStateOf<ScrubBand?>(null) }
     // Enough height for every letter to be worth aiming at. Counted per letter rather than set
     // as one number, since an alphabet with accents in it has more letters to find room for.
@@ -570,10 +569,7 @@ fun HomeRoute(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .onSizeChanged {
-                viewportHeightPx = it.height
-                viewportWidthPx = it.width
-            },
+            .onSizeChanged { viewportHeightPx = it.height },
     ) {
         // Hidden entirely while the list is up, so only the wallpaper sits behind it — and
         // kept composed the same way, so coming back is instant.
@@ -875,8 +871,6 @@ fun HomeRoute(
                 rowSpacingDp = settings.appListRowSpacingDp,
                 band = band,
                 viewportHeightPx = viewportHeightPx,
-                viewportWidthPx = viewportWidthPx,
-                azWidthPercent = settings.azWidthPercent,
                 visible = appListVisible,
                 favoriteKeys = remember(favoriteKeys) { favoriteKeys.toSet() },
                 onLaunch = { appInfo ->
@@ -998,10 +992,6 @@ fun HomeRoute(
                 pullPx = { 0f },
                 band = band,
                 side = scrub.side,
-                widthPercent = settings.azWidthPercent,
-                viewportWidthPx = viewportWidthPx.toFloat(),
-                // No bubble on the home screen, so the wave has the whole width to itself.
-                bubbleHalfPx = 0f,
                 style = settings.scrubStyle,
                 ripple = settings.rippleParams,
                 modifier = Modifier.align(
@@ -1152,8 +1142,6 @@ data class HomeSettings(
     val scrubBubbleShape: ScrubBubbleShape,
     val scrubReachPercent: Int,
     val rippleParams: RippleParams,
-    /** How much of the screen's width the A-Z strip takes, in percent. */
-    val azWidthPercent: Int,
     val azStripVisibility: AzStripVisibility,
     val shortcutSwipe: ShortcutSwipe,
     val showAlphabet: Boolean,

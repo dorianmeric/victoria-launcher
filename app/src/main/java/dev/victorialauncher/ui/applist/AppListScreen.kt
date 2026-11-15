@@ -233,10 +233,6 @@ fun AppListScreen(
     rowSpacingDp: Int,
     band: ScrubBand,
     viewportHeightPx: Int,
-    /** Width of the screen, so the A-Z strip's own width can be measured against it. */
-    viewportWidthPx: Int,
-    /** How much of that width the strip may take, in percent. */
-    azWidthPercent: Int,
     visible: Boolean,
     favoriteKeys: Set<String>,
     onLaunch: (AppInfo) -> Unit,
@@ -1397,20 +1393,6 @@ fun AppListScreen(
         }
         }
 
-        // The wave and its bubble are placed from one reading of the width setting, so the
-        // letter a finger lights up is the letter the bubble names. A hidden bubble leaves the
-        // whole width to the wave.
-        val bubbleHalfPx = with(density) { (SCRUB_BUBBLE_SIZE / 2).toPx() }
-        val bubbleHalf = if (scrubBubbleShape == ScrubBubbleShape.HIDDEN) 0f else bubbleHalfPx
-        val stripReach = remember(azWidthPercent, viewportWidthPx, bubbleHalf, density) {
-            scrubReach(
-                widthPercent = azWidthPercent,
-                screenWidthPx = viewportWidthPx.toFloat(),
-                bubbleHalfPx = bubbleHalf,
-                density = density.density,
-            )
-        }
-
         if (showAlphabet && !searching) {
             EdgeScrubber(
                 letters = displayModel.letters,
@@ -1418,9 +1400,6 @@ fun AppListScreen(
                 pullPx = pullPx,
                 band = band,
                 side = activeSide,
-                widthPercent = azWidthPercent,
-                viewportWidthPx = viewportWidthPx.toFloat(),
-                bubbleHalfPx = bubbleHalf,
                 style = scrubStyle,
                 ripple = rippleParams,
                 reach = scrubReach,
@@ -1445,8 +1424,7 @@ fun AppListScreen(
 
         // Bubble for the current letter, dragged out from the strip and springing back.
         if (scrubLetter != null && scrubBubbleShape != ScrubBubbleShape.HIDDEN) {
-            val bubble = 72.dp
-            val halfPx = with(density) { (bubble / 2).toPx() }
+            val bubbleHalfPx = with(density) { (SCRUB_BUBBLE_SIZE / 2).toPx() }
             val insetPx = with(density) { scrubBubbleInsetDp(scrubReach).dp.toPx() }
             Surface(
                 color = Color.Black.copy(alpha = 0.6f),
