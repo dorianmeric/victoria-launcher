@@ -263,6 +263,7 @@ fun AppListScreen(
     scrubStyle: ScrubStyle,
     scrubBubbleShape: ScrubBubbleShape,
     rippleParams: RippleParams,
+    scrubReach: Float,
     /** Hoisted so a swipe that overshoots the opening animation can keep scrolling it. */
     listState: LazyListState,
     /** How far the list still has to travel to be fully open; 0 once it has arrived. */
@@ -1422,6 +1423,7 @@ fun AppListScreen(
                 bubbleHalfPx = bubbleHalf,
                 style = scrubStyle,
                 ripple = rippleParams,
+                reach = scrubReach,
                 modifier = Modifier.align(
                     if (activeSide == EdgeSide.LEFT) Alignment.CenterStart else Alignment.CenterEnd
                 ),
@@ -1443,7 +1445,9 @@ fun AppListScreen(
 
         // Bubble for the current letter, dragged out from the strip and springing back.
         if (scrubLetter != null && scrubBubbleShape != ScrubBubbleShape.HIDDEN) {
-            val insetPx = stripReach.bubbleCenterPx - bubbleHalfPx
+            val bubble = 72.dp
+            val halfPx = with(density) { (bubble / 2).toPx() }
+            val insetPx = with(density) { scrubBubbleInsetDp(scrubReach).dp.toPx() }
             Surface(
                 color = Color.Black.copy(alpha = 0.6f),
                 shape = when (scrubBubbleShape) {

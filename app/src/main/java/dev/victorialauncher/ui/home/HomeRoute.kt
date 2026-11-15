@@ -941,6 +941,7 @@ fun HomeRoute(
                 scrubStyle = settings.scrubStyle,
                 scrubBubbleShape = settings.scrubBubbleShape,
                 rippleParams = settings.rippleParams,
+                scrubReach = settings.scrubReachPercent / 100f,
                 statusBarHidden = settings.hideStatusBarAppList,
                 searchModel = searchModel,
                 shortcutSwipe = settings.shortcutSwipe,
@@ -1149,6 +1150,7 @@ data class HomeSettings(
     val edgeSide: EdgeSide,
     val scrubStyle: ScrubStyle,
     val scrubBubbleShape: ScrubBubbleShape,
+    val scrubReachPercent: Int,
     val rippleParams: RippleParams,
     /** How much of the screen's width the A-Z strip takes, in percent. */
     val azWidthPercent: Int,

@@ -32,6 +32,39 @@ import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.math.roundToInt
 
+/** Letters sit this far in from the screen edge so they aren't crowding it. */
+private const val EDGE_INSET_DP = 28f
+
+/**
+ * How far the bulge pushes the column away from the edge at its peak.
+ *
+ * Has to clear the fingertip without reaching the bubble. The thumb is already an edge-zone in
+ * from the screen edge, so at 75dp the peak landed about 7dp from it — underneath, hidden by
+ * the hand pointing at it — while the bubble beginning at 122dp left only about 19dp of room
+ * to move into. The two only go further out together, which is what [scrubBubbleInsetDp]
+ * is for.
+ */
+private const val BELL_AMPLITUDE_DP = 112f
+
+/** Half the letter cell, so the peak is measured by its edge rather than its middle. */
+private const val LETTER_HALF_DP = 10f
+
+/**
+ * Where the letter bubble starts, kept a fixed gap beyond the peak of the bell.
+ *
+ * Derived rather than written down twice: the bubble sat at a number of its own, so growing
+ * the bulge to clear a fingertip walked the strip straight into it. [reach] is the share of
+ * the full bulge in use, so a shorter wave brings the bubble in toward the edge with it (#163).
+ */
+/** The bulge at its peak for [reach], for drawing the wave outside the strip itself. */
+fun scrubBellDp(reach: Float = 1f): Float = BELL_AMPLITUDE_DP * reach
+
+/** How far in from the screen edge the letters sit at rest. */
+fun scrubEdgeInsetDp(): Float = EDGE_INSET_DP
+
+fun scrubBubbleInsetDp(reach: Float = 1f): Float =
+    EDGE_INSET_DP + BELL_AMPLITUDE_DP * reach + LETTER_HALF_DP + 18f
+
 // ---- Ripple simulation -----------------------------------------------------------------------
 private const val SIM_DT = 1f / 240f
 
@@ -104,13 +137,15 @@ fun EdgeScrubber(
     modifier: Modifier = Modifier,
     style: ScrubStyle = ScrubStyle.BELL,
     ripple: RippleParams = RippleParams(),
+    /** Share of the full bulge, 0..1 — see [scrubBubbleInsetDp]. */
+    reach: Float = 1f,
 ) {
     if (letters.isEmpty()) return
     val density = LocalDensity.current.density
     val spacingPx = band.heightPx / letters.size
     // Wide enough that a good stretch of the alphabet takes part in the curve.
     val sigmaPx = 2.6f * spacingPx
-    val bellPx = scrubReach(widthPercent, viewportWidthPx, bubbleHalfPx, density).amplitudePx
+    val bellPx = BELL_AMPLITUDE_DP * reach * density
 
     val centerYs = remember(letters.size, band.topPx, band.heightPx) {
         FloatArray(letters.size) {

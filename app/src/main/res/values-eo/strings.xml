@@ -70,7 +70,7 @@
     <string name="settings_section_gestures">Gestoj</string>
     <string name="settings_section_notifications">Sciigoj</string>
     <string name="settings_preview">Antaŭrigardo</string>
-    <string name="settings_search">Serĉagordoj</string>
+    <string name="settings_search">Serĉi en agordoj</string>
     <string name="settings_corner_search">Malfermi la serĉon</string>
     <string name="settings_corner_button">Butono en la malsupra angulo</string>
     <string name="settings_last_letter">Ĉiu litero sur la sama linio</string>
@@ -433,4 +433,5 @@
     <string name="widget_clock_agenda_gap">Spaco por venontaj eventoj supre</string>
     <string name="widget_clock_notifications_gap">Spaco por nombrilo supre</string>
     <string name="widget_clock_battery_gap">Spaco por baterio supre</string>
+    <string name="settings_scrub_reach">Atingo de la ondo</string>
 </resources>
